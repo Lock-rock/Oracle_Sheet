@@ -1,0 +1,36 @@
+Steps to Resolve the Issue
+1. Verify the Standby Database Run the following query on the Standby Database to confirm its status:
+SQL> select name, open_mode, database_role from v$database;
+
+Check the Managed Recovery Process (MRP):
+SQL> select process, thread#, sequence#, status from v$managed_standby where process = 'MRP0';
+
+2. Identify the UNNAMED File Locate the unnamed file on the Standby Database:
+SQL> select FILE#||','||ERROR||','||STATUS||','||RECOVER||','||FUZZY||','||NAME from v$datafile_header where ERROR='FILE MISSING';
+    18,FILE MISSING,ONLINE,,,
+SQL>select file#,name from v$datafile where file#=18;
+Output example:
+FILE#	Name 18	/u01/app/oracle/product/11.2.0.4/db/dbs/UNNAMED00011
+
+
+3. Find the Corresponding Datafile on the Primary Database On the Primary Database, run:
+SQL> select file#, name from v$datafile where file# = 11;
+Output example:
+FILE#	Name11	/u02/oradata/datafile/orclprd/users01.dbf
+
+4. Rename the File on the Standby Database Temporarily set STANDBY_FILE_MANAGEMENT to MANUAL:
+SQL> alter system set standby_file_management = MANUAL scope=both;
+
+Rename the unnamed file:
+SQL> alter database create datafile '/u01/app/oracle/product/11.2.0.4/db/dbs/UNNAMED00011' as '/u02/oradata/datafile/oradata/users01.dbf';
+
+
+Revert STANDBY_FILE_MANAGEMENT to AUTO:
+SQL> alter system set standby_file_management = AUTO scope=both;
+
+
+5. Restart and Verify the MRP Restart the Managed Recovery Process:
+SQL> ALTER DATABASE RECOVER MANAGED STANDBY DATABASE USING CURRENT LOGFILE DISCONNECT;
+
+Verify that the logs are being applied:
+When the difference is 0, synchronization between Primary and Standby is restored.
