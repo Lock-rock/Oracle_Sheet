@@ -1,0 +1,16 @@
+first check :
+
+sysresv
+
+now use shared memory:
+
+Shared Memory:
+ID              KEY
+130024479       0xffffffff
+59769888        0xffffffff
+98567186        0xffffffff
+100664356       0xcb1ae2e0
+
+
+and cleare these ID:
+ipcrm -m ID
