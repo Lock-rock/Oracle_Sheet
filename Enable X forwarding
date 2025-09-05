@@ -1,0 +1,58 @@
+🔹 1. On the client machine (where you connect from)
+
+Make sure you have an X server installed:
+
+On Linux: usually already there (xorg-x11-xauth, xorg-x11-x11-utils).
+
+On Windows: install Xming, VcXsrv, or MobaXterm.
+
+On macOS: install XQuartz.
+
+When connecting with SSH, use:
+ssh -X username@remote_host
+
+or for trusted forwarding:
+ssh -Y username@remote_host
+
+🔹 2. On the remote server (where you connect to)
+
+Install X11 utilities if not already present:
+
+sudo apt-get install xauth x11-apps    # Debian/Ubuntu
+sudo yum install xorg-x11-xauth xorg-x11-apps  # RHEL/CentOS
+
+
+Edit the SSH daemon config:
+sudo nano /etc/ssh/sshd_config
+
+Make sure these lines exist (uncomment or add if missing):
+
+X11Forwarding yes
+X11DisplayOffset 10
+X11UseLocalhost yes
+
+
+Save and restart SSH:
+
+sudo systemctl restart sshd   # RHEL/CentOS/Ubuntu 16.04+
+sudo service ssh restart      # Older systems
+
+🔹 3. Test it
+
+After reconnecting with ssh -X or ssh -Y, try:
+xclock
+
+or
+xeyes
+
+If an X window pops up on your local machine, forwarding is working ✅.
+
+⚠️ Common Issues
+
+If you get Error: Can't open display, check:
+
+On client: echo $DISPLAY should show something like localhost:10.0.
+
+On server: xauth list should list keys.
+
+Your firewall/SELinux might block X11 (check /var/log/secure or /var/log/auth.log).
