@@ -18,7 +18,7 @@ delete noprompt expired archivelog all;
 crosscheck backup of database;
 delete noprompt expired backup of database;
 backup format '/backup/rman/PEGAPRD/full/LEVEL_0_%d_%T_%s_%p_%u.ctl' current controlfile;
-backup filesperset=4  incremental level 0 as backupset tag='LEVEL0_BKP' format '/backup/rman/PEGAPRD/full/LEVEL_0_%d_%T_%p_%U.dbf' (database);
+backup as backupset full database tag='FULL_BKP' format '/backup/rman/PEGAPRD/full/LEVEL_0_%d_%T_%p_%U.dbf' (database);
 backup as backupset tag='PEGADB_ARCH' ARCHIVELOG ALL NOT BACKED UP 1 TIMES FORMAT '/backup/rman/PEGAPRD/full/arch_%d_%T_%p_%U.arc';
 backup spfile format '/backup/rman/PEGAPRD/full/spfile_%d_%T.ora';
 backup format '/backup/rman/PEGAPRD/full/LEVEL_0_%d_%T_%s_%p_%u.ctl' current controlfile;
