@@ -14,3 +14,40 @@ FROM    v$sql
 ORDER BY elapsed_time DESC)
 WHERE ROWNUM < 10
 /
+
+
+
+check load by query:
+
+SELECT s.username,
+       s.sid,
+       s.serial#,
+       s.osuser,
+       q.sql_id,
+       q.cpu_time / 1000000 AS cpu_seconds,
+       q.elapsed_time / 1000000 AS elapsed_seconds,
+       q.executions,
+       q.sql_text
+FROM v$sql q
+JOIN v$session s ON q.sql_id = s.sql_id
+WHERE s.status = 'ACTIVE'
+ORDER BY q.cpu_time DESC;
+
+
+
+
+SELECT s.sid,
+       s.serial#,
+       s.username,
+       s.osuser,
+       s.program,
+       s.sql_id,
+       q.sql_text,
+       t.value AS cpu_usage
+FROM v$session s
+JOIN v$sesstat t ON s.sid = t.sid
+JOIN v$statname n ON t.statistic# = n.statistic#
+LEFT JOIN v$sql q ON s.sql_id = q.sql_id
+WHERE n.name = 'CPU used by this session'
+AND s.status = 'ACTIVE'
+ORDER BY t.value DESC;
