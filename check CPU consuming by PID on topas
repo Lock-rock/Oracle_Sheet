@@ -1,0 +1,30 @@
+First check topas :
+
+
+now check PID that consuming cpu:
+
+SELECT spid, pname, program FROM v$process WHERE spid = '131336';
+
+
+
+
+SELECT RPAD('USERNAME : ' || s.username, 80) ||
+RPAD('OSUSER : ' || s.osuser, 80) ||
+RPAD('PROGRAM : ' || s.program, 80) ||
+RPAD('SPID : ' || p.spid, 80) ||
+RPAD('SID : ' || s.sid, 80) ||
+RPAD('SERIAL# : ' || s.serial#, 80) ||
+RPAD('MACHINE : ' || s.machine, 80) ||
+RPAD('TERMINAL : ' || s.terminal, 80)
+--RPAD('SQL TEXT : ' || q.sql_text, 80)
+FROM v$session s ,v$process p ,v$sql q
+WHERE s.paddr = p.addr AND s.sql_address = q.address AND s.sql_hash_value = q.hash_value
+AND p.spid = '41353548';
+
+
+
+
+db2 "SELECT APPLICATION_HANDLE, AGENT_ID, COORD_AGENT_PID, COORD_AGENT_TID, APPL_STATUS, AUTHID 
+     FROM SYSIBMADM.SNAPAPPL 
+     WHERE COORD_AGENT_PID = 131336"
+SELECT spid, pname, program FROM v$process WHERE spid = '131336';
