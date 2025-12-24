@@ -1,0 +1,231 @@
+Oracle Dataguard Switchover with broker
+Posted on February 26, 2023February 26, 2023 by Shripal
+switchover with broker
+To perform an Oracle Data Guard switchover with broker, you can follow these general steps:
+
+Table of Contents
+Prepare for the switchover
+Before starting the switchover process, make sure that both the primary and standby databases are synchronized and that all required logs have been applied to the standby database. Also, ensure that the broker is configured and running on both the primary and standby sites.
+
+Manual Switchover Read Here
+
+Step 1: Check Archvie Gap
+Before starting the switchover activity let's verify the archive gap between primary and standby.
+
+On Primary:
+SQL> select thread#, max(sequence#) "Last Primary Seq# Generated" from v$archived_log v, v$database d
+where v.resetlogs_change# = d.resetlogs_change#
+group by thread# order by 1;
+
+   THREAD# Last Primary Seq# Generated
+---------- ---------------------------
+         1                          27
+On Standby:
+SQL> select thread#, max(sequence#) "Last Primary Seq# Generated" from v$archived_log v, v$database d
+where v.resetlogs_change# = d.resetlogs_change#
+group by thread# order by 1;  2    3
+
+   THREAD# Last Primary Seq# Generated
+---------- ---------------------------
+         1                          27
+Step 2: Connect to the broker
+Connect to the broker using the dgmgrl utility on the primary database. For example, you can run the command "dgmgrl /" to connect to the default broker configuration.
+
+[oracle@primary ~]$ dgmgrl sys/Oracle#123
+DGMGRL for Linux: Release 19.0.0.0.0 - Production on Sun Feb 26 09:02:31 2023
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle and/or its affiliates.  All rights reserved.
+
+Welcome to DGMGRL, type "help" for information.
+Connected to "digital"
+Connected as SYSDBA.
+Step 3: Verify the configuration
+Verify that the broker configuration is correct by running the "show configuration" command. This will display the current configuration settings for the broker.
+
+DGMGRL> show configuration
+
+Configuration - digital
+
+  Protection Mode: MaxPerformance
+  Members:
+  digital - Primary database
+    digidr  - Physical standby database
+
+Fast-Start Failover:  Disabled
+
+Configuration Status:
+SUCCESS   (status updated 51 seconds ago)
+In this configuration, we have Primary Database "DIGITAL" and the standby Database is "DIGIDR".
+
+Step 4: Prepare for the switchover
+Prepare for the switchover by running the "validate database" command to ensure that both the primary and standby databases are ready for switchover.
+
+Validate Primary Database
+
+
+DGMGRL> validate database digital;
+
+  Database Role:    Primary database
+
+  Ready for Switchover:  Yes
+
+  Flashback Database Status:
+    digital:  Off
+
+  Managed by Clusterware:
+    digital:  NO
+    Validating static connect identifier for the primary database digital...
+    The static connect identifier allows for a connection to database "digital".
+Validate Standby Database
+DGMGRL> validate database digidr;
+
+  Database Role:     Physical standby database
+  Primary Database:  digital
+
+  Ready for Switchover:  Yes
+  Ready for Failover:    Yes (Primary Running)
+
+  Flashback Database Status:
+    digital:  Off
+    digidr :  Off
+
+  Managed by Clusterware:
+    digital:  NO
+    digidr :  NO
+    Validating static connect identifier for the primary database digital...
+    The static connect identifier allows for a connection to database "digital".
+
+  Current Log File Groups Configuration:
+    Thread #  Online Redo Log Groups  Standby Redo Log Groups Status
+              (digital)               (digidr)
+    1         3                       2                       Insufficient SRLs
+
+  Future Log File Groups Configuration:
+    Thread #  Online Redo Log Groups  Standby Redo Log Groups Status
+              (digidr)                (digital)
+    1         3                       0                       Insufficient SRLs
+    Warning: standby redo logs not configured for thread 1 on digital
+Step 5: Initiate the switchover
+Initiate the switchover by running the "switchover to " command in dgmgrl. This will start the switchover process and automatically failover the primary database to the standby database.
+
+DGMGRL> switchover to digidr;
+Performing switchover NOW, please wait...
+Operation requires a connection to database "digidr"
+Connecting ...
+Connected to "digidr"
+Connected as SYSDBA.
+New primary database "digidr" is opening...
+Operation requires start up of instance "digital" on database "digital"
+Starting instance "digital"...
+Connected to an idle instance.
+ORACLE instance started.
+Connected to "digital"
+Database mounted.
+Database opened.
+Connected to "digital"
+Switchover succeeded, new primary is "digidr"
+Step 6: Verify the switchover
+After the switchover, verify that the new primary database is running by running the "show database" command in dgmgrl.
+
+Current Primary digidr
+DGMGRL> show database digidr
+
+Database - digidr
+
+  Role:               PRIMARY
+  Intended State:     TRANSPORT-ON
+  Instance(s):
+    digidr
+
+Database Status:
+SUCCESS
+Current standby digital
+DGMGRL> show database digital
+
+Database - digital
+
+  Role:               PHYSICAL STANDBY
+  Intended State:     APPLY-ON
+  Transport Lag:      0 seconds (computed 0 seconds ago)
+  Apply Lag:          0 seconds (computed 0 seconds ago)
+  Average Apply Rate: 0 Byte/s
+  Real Time Query:    ON
+  Instance(s):
+    digital
+
+Database Status:
+SUCCESS
+Database Warnings
+Sometimes you will face the below error, then you have to check the log_archive_dest_1 and log_archive_dest_2 parameter on the standby side and configure it properly.
+
+DGMGRL> show database digital
+
+Database - digital
+
+  Role:               PHYSICAL STANDBY
+  Intended State:     APPLY-ON
+  Transport Lag:      (unknown)
+  Apply Lag:          (unknown)
+  Average Apply Rate: (unknown)
+  Real Time Query:    ON
+  Instance(s):
+    digital
+
+  Database Warning(s):
+    ORA-16854: apply lag could not be determined
+    ORA-16856: transport lag could not be determined
+    ORA-16858: last communication time from redo source could not be determined
+
+Database Status:
+WARNING
+
+
+DGMGRL> show database digidr;
+
+Database - digidr
+
+  Role:               PRIMARY
+  Intended State:     TRANSPORT-ON
+  Instance(s):
+    digidr
+      Error: ORA-16736: unable to find the destination entry of member "digital" in V$ARCHIVE_DEST
+      Warning: ORA-16728: consistency check for property RedoRoutes found ORA-16777 error
+      Warning: ORA-16777: unable to find the destination entry of a member in V$ARCHIVE_DEST
+      Warning: ORA-16728: consistency check for property LogXptMode found ORA-16777 error
+      Warning: ORA-16777: unable to find the destination entry of a member in V$ARCHIVE_DEST
+      Warning: ORA-16728: consistency check for property DelayMins found ORA-16777 error
+      Warning: ORA-16777: unable to find the destination entry of a member in V$ARCHIVE_DEST
+      Warning: ORA-16728: consistency check for property Binding found ORA-16777 error
+      Warning: ORA-16777: unable to find the destination entry of a member in V$ARCHIVE_DEST
+      Warning: ORA-16728: consistency check for property MaxFailure found ORA-16777 error
+      Warning: ORA-16777: unable to find the destination entry of a member in V$ARCHIVE_DEST
+      Warning: ORA-16728: consistency check for property ReopenSecs found ORA-16777 error
+      Warning: ORA-16777: unable to find the destination entry of a member in V$ARCHIVE_DEST
+      Warning: ORA-16728: consistency check for property RedoCompression found ORA-16777 error
+      Warning: ORA-16777: unable to find the destination entry of a member in V$ARCHIVE_DEST
+
+Database Status:
+ERROR
+Step 7: Reconfigure the environment
+If necessary, reconfigure the environment to point to the new primary database. For example, update connection strings, DNS entries, or load balancer settings to point to the new primary database.
+
+Step 8: Start Recovery
+After the switchover start the MRP process using the broker or manually.
+
+Enable with Broker:
+DGMGRL> EDIT DATABASE digital SET STATE='APPLY-ON';
+Succeeded.
+Check MRP status using SQL command, if no row is selected that means MRP is disabled.
+
+SQL> select inst_id, process, status from gv$managed_standby where process='MRP0';
+
+   INST_ID PROCESS   STATUS
+---------- --------- ------------
+         1 MRP0      APPLYING_LOG
+Disable with Broker
+DGMGRL> EDIT DATABASE digital SET STATE='APPLY-OFF';
+Enable/Disable manually:
+SQL> alter database recover managed standby database disconect from session;
+
+SQL> alter database recover managed standby database cancel;
