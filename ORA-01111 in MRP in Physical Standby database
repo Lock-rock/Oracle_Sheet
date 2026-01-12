@@ -79,3 +79,10 @@ RFS IDLE 1015
 Step 8:  Make sure you corrected the error which caused failure of creation of file.
 
 We have to ensure the STANDBY_FILE_MANAGEMENT and DB_FILE_CONVERT parameter are correct
+
+
+Start the MRP (this is using Real Time Apply)
+alter database recover managed standby database using current logfile disconnect;
+
+the MRP Stop (this is using Real Time Apply log stop)
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
