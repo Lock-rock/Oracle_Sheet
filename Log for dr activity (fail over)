@@ -1,0 +1,88 @@
+Last unsuccessful login: Mon Jan 17 22:18:46 IST 2022 on ssh from 10.10.5.171
+Last login: Tue Jan 25 08:36:24 IST 2022 on ssh from 10.10.5.171
+*******************************************************************************
+*                                                                             *
+*                                                                             *
+*  Welcome to AIX Version 7.1!                                                *
+*                                                                             *
+*                                                                             *
+*  Please see the README file in /usr/lpp/bos for information pertinent to    *
+*  this release of the AIX Operating System.                                  *
+*                                                                             *
+*                                                                             *
+*******************************************************************************
+[YOU HAVE NEW MAIL]
+$ Select name,open_mode,database_role from v$database;
+$
+$
+$
+$ sqlplus / as sysdba
+
+SQL*Plus: Release 12.2.0.1.0 Production on Tue Jan 25 22:59:32 2022
+
+Copyright (c) 1982, 2017, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 12c Enterprise Edition Release 12.2.0.1.0 - 64bit Production
+
+SQL> Select name,open_mode,database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+PEGAPRD   MOUNTED              PHYSICAL STANDBY
+
+SQL> alter database recover managed standby database cancel;
+
+Database altered.
+
+SQL> alter database recover managed standby database finish;
+
+Database altered.
+
+SQL> Select name,open_mode,database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+PEGAPRD   MOUNTED              PHYSICAL STANDBY
+
+SQL>
+SQL> alter database activate standby database;
+
+
+Database altered.
+
+SQL> SQL> Select name,open_mode,database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+PEGAPRD   MOUNTED              PRIMARY
+
+SQL> shutdown immediate;
+ORA-01109: database not open
+
+
+Database dismounted.
+ORACLE instance shut down.
+SQL>
+SQL>
+SQL>
+SQL> startup;
+ORA-32004: obsolete or deprecated parameter(s) specified for RDBMS instance
+ORACLE instance started.
+
+Total System Global Area 8589934592 bytes
+Fixed Size                  8735256 bytes
+Variable Size            1577059816 bytes
+Database Buffers         6996099072 bytes
+Redo Buffers                8040448 bytes
+Database mounted.
+Database opened.
+SQL>
+SQL>
+SQL>
+SQL>  Select name,open_mode,database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+PEGAPRD   READ WRITE           PRIMARY
