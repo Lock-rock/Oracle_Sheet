@@ -1,0 +1,394 @@
+Procedure to convert a snapshot standby back to physical standby in oracle
+Procedure to convert a snapshot standby back to physical standby in oracle
+Step 1) Verify the status of the db
+
+set lines 300
+set pages 3000
+select name,open_mode,database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+select process,status,client_process,sequence# from gv$managed_standby;
+select scn,GUARANTEE_FLASHBACK_DATABASE,NAME from V$RESTORE_POINT;
+
+Actual output:
+
+SQL> select name,open_mode,database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE    DB_UNIQUE_NAME                 NAME      SWITCHOVER_STATUS
+--------- -------------------- ---------------- ------------------------------ --------- --------------------
+GGSRC04T  READ WRITE           SNAPSHOT STANDBY GGSRC04TSB1                    GGSRC04T  NOT ALLOWED
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+DGRD      ALLOCATED    N/A               0
+ARCH      CLOSING      ARCH             23
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+LNS       CONNECTED    LNS               0
+DGRD      ALLOCATED    N/A               0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             25
+RFS       IDLE         UNKNOWN           0
+RFS       IDLE         UNKNOWN           0
+12 rows selected.
+
+SQL> select scn,GUARANTEE_FLASHBACK_DATABASE,NAME from V$RESTORE_POINT;
+
+       SCN GUA NAME
+---------- --- --------------------------------------------------------------------------------------------------------------------------------
+    600556 YES SNAPSHOT_STANDBY_REQUIRED_09/04/2023 11:05:49
+
+SQL> col name for a50
+
+SQL> 1
+  1* select scn,GUARANTEE_FLASHBACK_DATABASE,NAME from V$RESTORE_POINT
+SQL> /
+       SCN GUA NAME
+---------- --- --------------------------------------------------
+    600556 YES SNAPSHOT_STANDBY_REQUIRED_09/04/2023 11:05:49
+SQL>
+
+SQL> select * from V$FLASH_RECOVERY_AREA_USAGE;
+
+FILE_TYPE               PERCENT_SPACE_USED PERCENT_SPACE_RECLAIMABLE NUMBER_OF_FILES     CON_ID
+----------------------- ------------------ ------------------------- --------------- ----------
+CONTROL FILE                             0                         0               0          0
+REDO LOG                                 0                         0               0          0
+ARCHIVED LOG                          1.46                      1.06               6          0
+BACKUP PIECE                           .99                         0               2          0
+IMAGE COPY                               0                         0               0          0
+FLASHBACK LOG                        19.53                         0               2          0
+FOREIGN ARCHIVED LOG                     0                         0               0          0
+AUXILIARY DATAFILE COPY                  0                         0               0          0
+8 rows selected.
+SQL>
+
+Step 2) Ensure the DB is in mount state
+
+shu immediate;
+startup mount;
+set lines 300
+set pages 3000
+select name,open_mode,database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+select process,status,client_process,sequence# from gv$managed_standby;
+
+Actual output:
+
+SQL> shu immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+
+SQL> startup mount;
+ORACLE instance started.
+Total System Global Area 3221225472 bytes
+Fixed Size                  8625856 bytes
+Variable Size            1442840896 bytes
+Database Buffers         1761607680 bytes
+Redo Buffers                8151040 bytes
+Database mounted.
+
+SQL>
+SQL> select name,open_mode,database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+
+NAME       OPEN_MODE            DATABASE_ROLE    DB_UNIQUE_NAME                 NAME       SWITCHOVER_STATUS
+---------- -------------------- ---------------- ------------------------------ ---------- --------------------
+GGSRC04T   MOUNTED              SNAPSHOT STANDBY GGSRC04TSB1                    GGSRC04T   NOT ALLOWED
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+DGRD      ALLOCATED    N/A               0
+ARCH      CLOSING      ARCH             25
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             26
+
+8 rows selected.
+SQL>
+
+Step 3) Convert the db back to physical standby using the below command
+
+ALTER DATABASE CONVERT TO PHYSICAL STANDBY;
+
+Actual output:
+
+SQL> ALTER DATABASE CONVERT TO PHYSICAL STANDBY;
+
+Database altered.
+
+SQL> select name,open_mode,database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+
+NAME       OPEN_MODE            DATABASE_ROLE    DB_UNIQUE_NAME                 NAME       SWITCHOVER_STATUS
+---------- -------------------- ---------------- ------------------------------ ---------- --------------------
+GGSRC04T   MOUNTED              PHYSICAL STANDBY GGSRC04TSB1                    GGSRC04T   RECOVERY NEEDED
+SQL>
+
+Step 4) Start the DB back again to mount/read only based on your active dataguard license availability
+
+shu immediate;
+startup mount;
+set lines 300
+set pages 3000
+select name,open_mode,database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+select process,status,client_process,sequence# from gv$managed_standby;
+
+Actual output:
+
+SQL> shu immediate;
+ORA-01109: database not open
+
+Database dismounted.
+ORACLE instance shut down.
+SQL>
+
+SQL> startup mount
+ORACLE instance started.
+Total System Global Area 3221225472 bytes
+Fixed Size                  8625856 bytes
+Variable Size            1442840896 bytes
+Database Buffers         1761607680 bytes
+Redo Buffers                8151040 bytes
+Database mounted.
+
+SQL> select name,open_mode,database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+
+NAME       OPEN_MODE            DATABASE_ROLE    DB_UNIQUE_NAME                 NAME       SWITCHOVER_STATUS
+---------- -------------------- ---------------- ------------------------------ ---------- --------------------
+GGSRC04T   MOUNTED              PHYSICAL STANDBY GGSRC04TSB1                    GGSRC04T   RECOVERY NEEDED
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CLOSING      ARCH             27
+ARCH      CONNECTED    ARCH              0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             28
+
+8 rows selected.
+SQL>
+
+Step 5) Verify recovery state
+
+set lines 300
+set pages 3000
+select process,status,client_process,sequence# from gv$managed_standby;
+
+Actual output:
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CLOSING      ARCH             27
+ARCH      CONNECTED    ARCH              0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             28
+
+8 rows selected.
+SQL>
+
+Step 6) If the db isnt in recovery mode, put the db in recovery mode
+
+alter database recover automatic managed standby database disconnect from session;
+set lines 300
+set pages 3000
+select process,status,client_process,sequence# from gv$managed_standby;
+
+Actual output:
+
+SQL> alter database recover automatic managed standby database disconnect from session;
+
+Database altered.
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CLOSING      ARCH             27
+ARCH      CONNECTED    ARCH              0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             28
+MRP0      APPLYING_LOG N/A              28
+
+9 rows selected.
+
+SQL> select status,applied,max(sequence#) from v$archived_log group by status,applied;
+
+S APPLIED   MAX(SEQUENCE#)
+- --------- --------------
+A YES                   26
+A IN-MEMORY             27
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CLOSING      ARCH             27
+ARCH      CONNECTED    ARCH              0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             28
+MRP0      APPLYING_LOG N/A              28
+
+9 rows selected.
+
+SQL> /
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+DGRD      ALLOCATED    N/A               0
+ARCH      CLOSING      ARCH             28
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CLOSING      ARCH             27
+ARCH      CONNECTED    ARCH              0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             29
+MRP0      APPLYING_LOG N/A              29
+
+9 rows selected.
+SQL>
+
+Step 7) Perform a log switch in primary and check in standby if the recovery is all good. [only step u need primary]
+
+--primary:
+alter system switch logfile;
+
+--standby:
+set lines 300
+set pages 3000
+select process,status,client_process,sequence# from gv$managed_standby;
+Actual output:
+
+--primary:
+
+SQL> select * from v$log;
+
+    GROUP#    THREAD#  SEQUENCE#      BYTES  BLOCKSIZE    MEMBERS ARC STATUS           FIRST_CHANGE# FIRST_TIM NEXT_CHANGE# NEXT_TIME       CON_ID
+---------- ---------- ---------- ---------- ---------- ---------- --- ---------------- ------------- --------- ------------ --------- ----------
+         1          1         28  209715200        512          1 NO  CURRENT                 673153 04-SEP-23   1.8447E+19                      0
+         2          1         26  209715200        512          1 YES INACTIVE                672879 04-SEP-23       672965 04-SEP-23            0
+         3          1         27  209715200        512          1 YES ACTIVE                  672965 04-SEP-23       673153 04-SEP-23            0
+
+SQL> alter system switch logfile;
+
+System altered.
+
+SQL> select * from v$log;
+
+    GROUP#    THREAD#  SEQUENCE#      BYTES  BLOCKSIZE    MEMBERS ARC STATUS           FIRST_CHANGE# FIRST_TIM NEXT_CHANGE# NEXT_TIME       CON_ID
+---------- ---------- ---------- ---------- ---------- ---------- --- ---------------- ------------- --------- ------------ --------- ----------
+         1          1         28  209715200        512          1 YES ACTIVE                  673153 04-SEP-23       673449 04-SEP-23            0
+         2          1         29  209715200        512          1 NO  CURRENT                 673449 04-SEP-23   1.8447E+19                      0
+         3          1         27  209715200        512          1 YES ACTIVE                  672965 04-SEP-23       673153 04-SEP-23            0
+
+SQL>
+
+-- standby
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CLOSING      ARCH             27
+ARCH      CONNECTED    ARCH              0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             28
+MRP0      APPLYING_LOG N/A              28
+
+9 rows selected.
+
+SQL> /
+
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+DGRD      ALLOCATED    N/A               0
+ARCH      CLOSING      ARCH             28
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CLOSING      ARCH             27
+ARCH      CONNECTED    ARCH              0
+RFS       IDLE         Archival          0
+RFS       IDLE         LGWR             29
+MRP0      APPLYING_LOG N/A              29
+
+9 rows selected.
+
+SQL>
+
+Step 8) Check the status of the restore point that snapshot standby command created.
+
+set lines 300
+set pages 3000
+select scn,GUARANTEE_FLASHBACK_DATABASE,NAME from V$RESTORE_POINT;
+
+Actual output:
+
+SQL> select scn,GUARANTEE_FLASHBACK_DATABASE,NAME from V$RESTORE_POINT;
+no rows selected
+SQL>
+--------
+
+Foot Notes:
+
+select parameter,value from v$option where upper(parameter) like '%VAULT%';
+
+select * from v$encryption_wallet;
+
+
+
+Actual output:
+
+-- primary:
+
+SQL> select parameter,value from v$option where upper(parameter) like '%VAULT%';
+PARAMETER                                                        VALUE
+---------------------------------------------------------------- ----------------------------------------------------------------
+Oracle Database Vault                                            TRUE
+SQL>
+
+-- standby:
+SQL> select parameter,value from v$option where upper(parameter) like '%VAULT%';
+PARAMETER                                                        VALUE
+---------------------------------------------------------------- ----------------------------------------------------------------
+Oracle Database Vault                                            FALSE
+
+SQL> select * from v$encryption_wallet;
+WRL_TYPE
+--------------------
+WRL_PARAMETER
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+STATUS                         WALLET_TYPE          WALLET_OR FULLY_BAC     CON_ID
+------------------------------ -------------------- --------- --------- ----------
+FILE
+/u01/app/oracle/admin/GGSRC04TSB1/wallet/
+OPEN                           AUTOLOGIN            SINGLE    NO                 0
+
+----------------------looks like the vault needs to be enabled back using snapshot standby :)
