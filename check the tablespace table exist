@@ -10,3 +10,13 @@ ORDER BY 4 DESC;
 SELECT owner, TO_CHAR( SUM( bytes )/1024/1024, '999,999,999' ) mb FROM dba_segments WHERE tablespace_name = 'USERS' GROUP BY owner ORDER BY SUM( bytes );
 select * from dba_segments where tablespace_name = 'USERS'
 select * from dba_users where default_tablespace = 'USERS'
+
+
+check tabespase in auto increase:
+SELECT tablespace_name,
+       file_name,
+       autoextensible,
+       bytes/1024/1024 AS current_mb,
+       maxbytes/1024/1024 AS max_mb
+FROM dba_data_files
+ORDER BY tablespace_name;
