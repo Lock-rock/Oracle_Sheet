@@ -1,0 +1,174 @@
+Procedure to convert physical standby to snapshot standby in oracle
+Procedure to convert physical standby db to snapshot standby
+Reference: https://docs.oracle.com/cd/E11882_01/server.112/e41134/manage_ps.htm#SBYDB00708
+
+Step 1) Verify if the DB recovery is active
+
+set lines 300
+set pages 3000
+select database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+select process,status,client_process,sequence# from gv$managed_standby;
+
+Actual output:
+
+SQL> select database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+DATABASE_ROLE    DB_UNIQUE_NAME                 NAME      SWITCHOVER_STATUS
+---------------- ------------------------------ --------- --------------------
+PHYSICAL STANDBY GGSRC04TSB1                    GGSRC04T  NOT ALLOWED
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+MRP0      APPLYING_LOG N/A              23
+7 rows selected.
+
+SQL> select open_mode from v$database;
+
+OPEN_MODE
+--------------------
+READ ONLY WITH APPLY
+
+Step 2) Stop the redo apply
+
+alter database recover managed standby database cancel;
+select process,status,client_process,sequence# from gv$managed_standby;
+
+Actual output:
+
+SQL> alter database recover managed standby database cancel;
+Database altered.
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+6 rows selected.
+
+Step 3) Restart the db in mount state
+
+shu immediate;
+startup mount;
+Actual output:
+
+SQL> shu immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+
+SQL> startup mount;
+ORACLE instance started.
+Total System Global Area 3221225472 bytes
+Fixed Size                  8625856 bytes
+Variable Size            1442840896 bytes
+Database Buffers         1761607680 bytes
+Redo Buffers                8151040 bytes
+Database mounted.
+
+SQL> select database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+DATABASE_ROLE    DB_UNIQUE_NAME                 NAME      SWITCHOVER_STATUS
+---------------- ------------------------------ --------- --------------------
+PHYSICAL STANDBY GGSRC04TSB1                    GGSRC04T  NOT ALLOWED
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+6 rows selected.
+
+Step 4) Verify if FRA is configured, it is mandatory for the guranteed restore point which the database will create as part of snapshot standby
+
+sho parameter db_reco
+ALTER DATABASE CONVERT TO SNAPSHOT STANDBY;
+
+Actual output:
+
+SQL> sho parameter db_reco
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+db_recovery_file_dest                string      /oraarch
+db_recovery_file_dest_size           big integer 1G
+
+SQL> alter system set db_recovery_file_dest_size=2G;
+System altered.
+
+SQL> sho parameter db_reco
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+db_recovery_file_dest                string      /oraarch
+db_recovery_file_dest_size           big integer 2G
+
+SQL> ALTER DATABASE CONVERT TO SNAPSHOT STANDBY;
+Database altered.
+
+SQL> select database_role,db_unique_name,name ,SWITCHOVER_STATUS from v$database;
+DATABASE_ROLE    DB_UNIQUE_NAME                 NAME      SWITCHOVER_STATUS
+---------------- ------------------------------ --------- --------------------
+SNAPSHOT STANDBY GGSRC04TSB1                    GGSRC04T  NOT ALLOWED
+
+SQL> select name,open_mode from v$database;
+NAME      OPEN_MODE
+--------- --------------------
+GGSRC04T  MOUNTED
+
+SQL> alter database open;
+Database altered.
+
+SQL> select name,open_mode from v$database;
+NAME      OPEN_MODE
+--------- --------------------
+GGSRC04T  READ WRITE						<<< SNAPSHOT standby 
+allowed db to open in RW mode vs Physical standby allows db to open in RO mode as per their nature
+
+SQL> select process,status,client_process,sequence# from gv$managed_standby;
+PROCESS   STATUS       CLIENT_P  SEQUENCE#
+--------- ------------ -------- ----------
+ARCH      CONNECTED    ARCH              0
+DGRD      ALLOCATED    N/A               0
+DGRD      ALLOCATED    N/A               0
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+ARCH      CONNECTED    ARCH              0
+LNS       CONNECTED    LNS               0
+DGRD      ALLOCATED    N/A               0
+8 rows selected.
+
+SQL> select * from v$restore_point;
+       SCN DATABASE_INCARNATION# GUA STORAGE_SIZE TIME                                                                        RESTORE_POINT_TIME                                                    PRE
+---------- --------------------- --- ------------ --------------------------------------------------------------------------- --------------------------------------------------------------------------- ---
+NAME                                                                                                                      PDB CLE PDB_INCARNATION#     CON_ID
+-------------------------------------------------------------------------------------------------------------------------------- --- --- ---------------- ----------
+    600556                     1 YES    209715200 04-SEP-23 11.05.49.000000000 AM                                          YES
+SNAPSHOT_STANDBY_REQUIRED_09/04/2023 11:05:49                                                                             NO  NO          0          0
+
+SQL> select * from V$FLASHFILESTAT;
+no rows selected
+
+SQL> select * from V$FLASH_RECOVERY_AREA_USAGE;
+FILE_TYPE               PERCENT_SPACE_USED PERCENT_SPACE_RECLAIMABLE NUMBER_OF_FILES     CON_ID
+----------------------- ------------------ ------------------------- --------------- ----------
+CONTROL FILE                             0                         0               0          0
+REDO LOG                                 0                         0               0          0
+ARCHIVED LOG                          1.06                         0               4          0
+BACKUP PIECE                             0                         0               0          0
+IMAGE COPY                               0                         0               0          0
+FLASHBACK LOG                        19.53                         0               2          0
+FOREIGN ARCHIVED LOG                     0                         0               0          0
+AUXILIARY DATAFILE COPY                  0                         0               0          0
+8 rows selected.
+SQL>
