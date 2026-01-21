@@ -54,23 +54,21 @@ To prepare for smooth role transitions, such as switchovers, it’s essential to
 For check SRLs on primary database:
 SELECT group#, thread#, bytes/1024/1024 AS size_mb, status FROM v$log;
 
-add SRLs on primary:
+add Standby log file on primary:
+
+For chacking log file size in primary:
+SELECT * FROM v$log;
+
+and destinations:
+SELECT * FROM v$logfile ORDER BY group#;
 
 For setups using Oracle Managed Files (OMF):
 
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 10 ('/u01/oradata/cdb1/standby_redo01.log') SIZE 50M;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 11 ('/u01/oradata/cdb1/standby_redo02.log') SIZE 50M;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 12 ('/u01/oradata/cdb1/standby_redo03.log') SIZE 50M;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 13 ('/u01/oradata/cdb1/standby_redo04.log') SIZE 50M;
     
-    ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 10 SIZE 50M;
-    ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 11 SIZE 50M;
-    ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 12 SIZE 50M;
-    ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 13 SIZE 50M;
-    
-For setups not using Oracle Managed Files (OMF):
-
-    
-    ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 10 ('/u01/oradata/cdb1/standby_redo01.log') SIZE 50M;
-    ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 11 ('/u01/oradata/cdb1/standby_redo02.log') SIZE 50M;
-    ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 12 ('/u01/oradata/cdb1/standby_redo03.log') SIZE 50M;
-    ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 13 ('/u01/oradata/cdb1/standby_redo04.log') SIZE 50M;
     
 ##########################################################################
 ###################Now take backup of Primary database.###################
@@ -227,15 +225,31 @@ restore  database;
 and after recover database:
 recover database;
 
+For change in log file first we do change in parameters:
+
+ALTER SYSTEM SET STANDBY_FILE_MANAGEMENT = MANUAL; 
+
+Drop the standby logs:
+
+ALTER DATABASE DROP LOGFILE GROUP 8;
+add againe  by this command.
 Add Standby logfile to apply and run realtime dataguard.
 
-alter database add standby logfile group 4 '/u01/oradata/cdb1/standby01.log' size 20737418;
-alter database add standby logfile group 5 '/u01/oradata/cdb1/standby02.log' size 20737418;
-alter database add standby logfile group 6 '/u01/oradata/cdb1/standby03.log' size 20737418;
-alter database add standby logfile group 7 '/u01/oradata/cdb1/standby04.log' size 20737418;
-alter database add standby logfile group 8 '/u01/oradata/cdb1/standby05.log' size 20737418;
+alter database add standby logfile group 10 '/u01/oradata/cdb1/standby01.log' size SIZE 50M;
+alter database add standby logfile group 11 '/u01/oradata/cdb1/standby02.log' size SIZE 50M;
+alter database add standby logfile group 12 '/u01/oradata/cdb1/standby03.log' size SIZE 50M;
+alter database add standby logfile group 13 '/u01/oradata/cdb1/standby04.log' size SIZE 50M;
 
-Re
+And clear online log file like which groups 1 and  1 ,2 and 2,
+
+clear these 
+ALTER DATABASE CLEAR LOGFILE GROUP 1;
+ALTER DATABASE CLEAR LOGFILE GROUP 2;
+ALTER DATABASE CLEAR LOGFILE GROUP 3;
+
+after commplete this we change parameter files:
+ALTER SYSTEM SET STANDBY_FILE_MANAGEMENT = AUTO; 
+
 
 After Restore is finished,  connect to the Standby database and start the process of the MRP (Managed Recovery Process) and start applying of Redologs to the standby like following.
 
