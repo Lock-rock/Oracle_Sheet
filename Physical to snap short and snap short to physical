@@ -1,0 +1,276 @@
+#################################################################################################
+############################  WHILE FLASHBACK IS ON  ############################################
+#################################################################################################
+[oracle@UTTARHA ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sat Jan 31 13:48:19 2026
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> SELECT flashback_on FROM v$database;
+
+FLASHBACK_ON
+------------------
+YES
+
+SQL> ALTER DATABASE FLASHBACK OFF;
+
+Database altered.
+
+SQL> alter database recover managed standby database cancel;
+
+Database altered.
+
+SQL> shutdown immediate;
+ORA-01109: database not open
+
+
+Database dismounted.
+ORACLE instance shut down.
+SQL> startup mount;
+ORACLE instance started.
+
+Total System Global Area  297794752 bytes
+Fixed Size                  8895680 bytes
+Variable Size             230686720 bytes
+Database Buffers           50331648 bytes
+Redo Buffers                7880704 bytes
+Database mounted.
+SQL>  alter database recover managed standby database disconnect;
+
+Database altered.
+
+SQL> select name, open_mode from v$database;
+
+NAME      OPEN_MODE
+--------- --------------------
+UTTAR     MOUNTED
+
+SQL> alter database convert to snapshot standby;
+
+Database altered.
+
+SQL> alter database open;
+
+Database altered.
+
+SQL> select name, open_mode, database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+UTTAR     READ WRITE           SNAPSHOT STANDBY
+
+SQL> select name, guarantee_flashback_database from v$restore_point;
+
+NAME
+--------------------------------------------------------------------------------
+GUA
+---
+SNAPSHOT_STANDBY_REQUIRED_01/31/2026 13:56:16
+YES
+
+SQL> shut immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SQL> startup mount;
+ORACLE instance started.
+
+Total System Global Area  297794752 bytes
+Fixed Size                  8895680 bytes
+Variable Size             230686720 bytes
+Database Buffers           50331648 bytes
+Redo Buffers                7880704 bytes
+Database mounted.
+SQL> select name, open_mode, database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+UTTAR     MOUNTED              SNAPSHOT STANDBY
+
+SQL> select name, guarantee_flashback_database from v$restore_point;
+
+NAME
+--------------------------------------------------------------------------------
+GUA
+---
+SNAPSHOT_STANDBY_REQUIRED_01/31/2026 13:56:16
+YES
+
+
+SQL> alter database convert to physical standby;
+
+Database altered.
+
+SQL> shutdown immediate;
+ORA-01109: database not open
+
+
+Database dismounted.
+startup mount;
+ORACLE instance shut down.
+SQL> ORACLE instance started.
+
+Total System Global Area  297794752 bytes
+Fixed Size                  8895680 bytes
+Variable Size             230686720 bytes
+Database Buffers           50331648 bytes
+Redo Buffers                7880704 bytes
+
+
+Database mounted.
+SQL> alter database recover managed standby database disconnect;
+
+Database altered.
+
+SQL> SELECT flashback_on FROM v$database;
+
+FLASHBACK_ON
+------------------
+NO
+
+
+
+#################################################################################################
+############################  WHILE FLASHBACK IS OFF  ###########################################
+#################################################################################################
+
+[oracle@UTTARHA ~]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sat Jan 31 13:48:19 2026
+Version 19.3.0.0.0
+
+Copyright (c) 1982, 2019, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.3.0.0.0
+
+SQL> SELECT flashback_on FROM v$database;
+
+FLASHBACK_ON
+------------------
+YES
+
+SQL> ALTER DATABASE FLASHBACK OFF;
+
+Database altered.
+
+SQL> alter database recover managed standby database cancel;
+
+Database altered.
+
+SQL> shutdown immediate;
+ORA-01109: database not open
+
+
+Database dismounted.
+ORACLE instance shut down.
+SQL> startup mount;
+ORACLE instance started.
+
+Total System Global Area  297794752 bytes
+Fixed Size                  8895680 bytes
+Variable Size             230686720 bytes
+Database Buffers           50331648 bytes
+Redo Buffers                7880704 bytes
+Database mounted.
+SQL>  alter database recover managed standby database disconnect;
+
+Database altered.
+
+SQL> select name, open_mode from v$database;
+
+NAME      OPEN_MODE
+--------- --------------------
+UTTAR     MOUNTED
+
+SQL> alter database convert to snapshot standby;
+
+Database altered.
+
+SQL> alter database open;
+
+Database altered.
+
+SQL> select name, open_mode, database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+UTTAR     READ WRITE           SNAPSHOT STANDBY
+
+SQL> select name, guarantee_flashback_database from v$restore_point;
+
+NAME
+--------------------------------------------------------------------------------
+GUA
+---
+SNAPSHOT_STANDBY_REQUIRED_01/31/2026 13:56:16
+YES
+
+SQL> select name, open_mode, database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+UTTAR     READ WRITE           SNAPSHOT STANDBY
+
+SQL> shut immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SQL> startup mount;
+ORACLE instance started.
+
+Total System Global Area  297794752 bytes
+Fixed Size                  8895680 bytes
+Variable Size             230686720 bytes
+Database Buffers           50331648 bytes
+Redo Buffers                7880704 bytes
+Database mounted.
+SQL> select name, open_mode, database_role from v$database;
+
+NAME      OPEN_MODE            DATABASE_ROLE
+--------- -------------------- ----------------
+UTTAR     MOUNTED              SNAPSHOT STANDBY
+
+SQL> select name, guarantee_flashback_database from v$restore_point;
+
+NAME
+--------------------------------------------------------------------------------
+GUA
+---
+SNAPSHOT_STANDBY_REQUIRED_01/31/2026 13:56:16
+YES
+
+SQL> alter database convert to physical standby;
+
+Database altered.
+
+SQL> shutdown immediate;
+ORA-01109: database not open
+
+
+Database dismounted.
+startup mount;
+ORACLE instance shut down.
+SQL> ORACLE instance started.
+
+Total System Global Area  297794752 bytes
+Fixed Size                  8895680 bytes
+Variable Size             230686720 bytes
+Database Buffers           50331648 bytes
+Redo Buffers                7880704 bytes
+
+
+Database mounted.
+SQL> alter database recover managed standby database disconnect;
+
+Database altered.
+
