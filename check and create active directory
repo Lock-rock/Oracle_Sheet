@@ -1,6 +1,17 @@
-col DIRECTORY_NAME for a30;
-col DIRECTORY_PATH for a100;
-set lines 200 pages 200;
-SELECT owner, directory_name, directory_path FROM all_directories;
+-- Set up formatting
+COLUMN OWNER FORMAT A10
+COLUMN DIRECTORY_NAME FORMAT A30
+COLUMN DIRECTORY_PATH FORMAT A100
+SET LINESIZE 200
+SET PAGESIZE 200
+
+-- Select directory information
+SELECT 
+    OWNER, 
+    DIRECTORY_NAME, 
+    DIRECTORY_PATH 
+FROM 
+    ALL_DIRECTORIES;
+
 
 CREATE OR REPLACE DIRECTORY EXPORT AS '/backup/expimp';
