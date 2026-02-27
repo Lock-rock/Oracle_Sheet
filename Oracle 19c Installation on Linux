@@ -29,10 +29,11 @@ fi
 export ORACLE_SID=CDB
 export ORACLE_BASE=/u01/app/oracle
 export ORACLE_HOME=/u01/app/oracle/product/19.3/db_home
-
 PATH=$PATH:$HOME/.local/bin:$ORACLE_HOME/bin
-
 export PATH
+
+
+
 Export bash profile
 
 . .bash_profile
