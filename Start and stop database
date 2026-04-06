@@ -1,0 +1,18 @@
+Stop database:
+lsnrctl status
+lsnrctl stop
+
+sqlplus / as sysdba
+check replication on or not .
+if on then use to stop.
+
+shut immdiate;
+not if pdbs present in database
+stop pdbs.
+
+start database:
+sqlplus / as sysdba
+startup or startup mount 
+check replication on or not .
+if stop then use to start.
+
