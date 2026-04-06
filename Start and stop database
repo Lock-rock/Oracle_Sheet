@@ -5,14 +5,20 @@ lsnrctl stop
 sqlplus / as sysdba
 check replication on or not .
 if on then use to stop.
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
 
-shut immdiate;
 not if pdbs present in database
 stop pdbs.
+alter pluggable database DOCM_DB CLOSE IMMEDIATE;
+
+shut immdiate;
 
 start database:
 sqlplus / as sysdba
 startup or startup mount 
 check replication on or not .
 if stop then use to start.
+alter database recover managed standby database using current logfile disconnect;
 
+not if pdbs present in database
+alter pluggable database DOCM_DB open;
