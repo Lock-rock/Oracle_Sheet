@@ -1,0 +1,357 @@
+Steps for creating Dataguard in simple way in oracle:
+		###################
+		#On primary server#
+		###################
+
+Steps 1:
+Enable Archive Log Mode and Force Logging:
+shutdown immediate;
+startup mount;
+alter database archivelog;
+alter database force logging;
+alter database open;
+
+Steps 2:
+
+Set host entery in /etc/hosts
+
+IP addresss and user (on both servers)
+
+##################################################################
+###################Now add parameter in server####################
+##################################################################
+
+show parameter db_name
+    NAME				     TYPE	 VALUE
+    -------------------- ----------- ------------------------------
+    db_name 			     string	 cdb1
+
+show parameter db_unique_name
+    NAME				     TYPE	 VALUE
+    --------------------- ----------- ------------------------------
+    db_unique_name			 string	 cdb1
+
+
+Notes: The DB_NAME parameter for the standby database should match that of the primary database, but it needs a distinct DB_UNIQUE_NAME. In this example, we’ll set the standby database’s DB_UNIQUE_NAME to "cdb1_stby".
+
+To configure the primary database for DataGuard, set the necessary initialization parameters. These configurations facilitate data transfer between primary and standby databases.
+
+
+-- Set DataGuard configuration parameters
+    ALTER SYSTEM SET log_archive_config='DG_CONFIG=(cdb1,cdb1_stby)' SCOPE=BOTH;
+    ALTER SYSTEM SET log_archive_dest_1='LOCATION=/oracle/arch VALID_FOR=(ALL_LOGFILES,ALL_ROLES) DB_UNIQUE_NAME=cdb1' SCOPE=BOTH;
+    ALTER SYSTEM SET log_archive_dest_2='SERVICE=cdb1_stby LGWR ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=cdb1_stby' SCOPE=BOTH;
+    ALTER SYSTEM SET log_archive_format='%t_%s_%r.arc' SCOPE=SPFILE;
+    ALTER SYSTEM SET fal_server='cdb1_stby' SCOPE=BOTH;
+    ALTER SYSTEM SET fal_client='cdb1' SCOPE=BOTH;
+    ALTER SYSTEM SET standby_file_management='AUTO' SCOPE=BOTH;
+	
+	
+Now add standby Redo logs(SRLs):Creating Standby Redo Logs on the Primary Database
+To prepare for smooth role transitions, such as switchovers, it’s essential to create standby redo logs on the primary database. These logs should match or exceed the size of the largest online redo logs, with an additional group created per thread. This redundancy helps ensure data is captured even during role changes. The following example demonstrates how to set up standby redo logs on both primary and standby servers:
+
+
+For check SRLs on primary database:
+SELECT group#, thread#, bytes/1024/1024 AS size_mb, status FROM v$log;
+
+add Standby log file on primary:
+
+For chacking log file size in primary:
+SELECT * FROM v$log;
+
+and destinations:
+SELECT * FROM v$logfile ORDER BY group#;
+
+For setups using Oracle Managed Files (OMF):
+
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 10 ('/u01/oradata/cdb1/standby_redo01.log') SIZE 50M;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 11 ('/u01/oradata/cdb1/standby_redo02.log') SIZE 50M;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 12 ('/u01/oradata/cdb1/standby_redo03.log') SIZE 50M;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 GROUP 13 ('/u01/oradata/cdb1/standby_redo04.log') SIZE 50M;
+    
+    
+##########################################################################
+###################Now take backup of Primary database.###################
+##########################################################################
+FOR RMAN 0:
+
+cat RMAN_LEVEL0.sh
+#!/bin/sh
+
+export ORACLE_SID=PEGAPRD
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0/dbhome_1
+export PATH=${PATH}:${ORACLE_HOME}/bin
+export TODAY=`date +"%d_%b_%y"`
+$ORACLE_HOME/bin/rman target / log='/backup/logs/PEGAPRD/LEVEL_0_OUTPUT.log' append << EOF
+run {
+allocate channel ch1 device type disk;
+allocate channel ch2 device type disk;
+allocate channel ch3 device type disk;
+
+crosscheck archivelog all;
+delete noprompt expired archivelog all;
+crosscheck backup of database;
+delete noprompt expired backup of database;
+backup format '/backup/rman/PEGAPRD/full/LEVEL_0_%d_%T_%s_%p_%u.ctl' current controlfile;
+backup as backupset full database tag='FULL_BKP' format '/backup/rman/PEGAPRD/full/LEVEL_0_%d_%T_%p_%U.dbf' (database);
+backup as backupset tag='PEGADB_ARCH' ARCHIVELOG ALL NOT BACKED UP 1 TIMES FORMAT '/backup/rman/PEGAPRD/full/arch_%d_%T_%p_%U.arc';
+backup spfile format '/backup/rman/PEGAPRD/full/spfile_%d_%T.ora';
+backup format '/backup/rman/PEGAPRD/full/LEVEL_0_%d_%T_%s_%p_%u.ctl' current controlfile;
+release channel ch1;
+release channel ch2;
+release channel ch3;
+
+}
+EOF
+
+For check parameter in Primary server:
+
+set linesize 500 pages 100
+col value for a90
+col name for a50
+select name, value
+from v$parameter
+where name in ('db_name','db_unique_name','log_archive_config', 'log_archive_dest_1','log_archive_dest_2','log_archive_dest_state_1',
+|'log_archive_dest_state_2','remote_login_passwordfile','log_archive_format','log_archive_max_processes','fal_client','fal_server',
+'db_file_name_convert','log_file_name_convert', 'standby_file_management');
+
+Add lsnrctl and tnsnames.ora in both servers.
+
+cdb1=
+(DESCRIPTION_LIST =
+(DESCRIPTION =
+(ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1521))
+(ADDRESS = (PROTOCOL = TCP)(HOST = Host_name)(PORT = 1521))
+)
+)
+
+ADR_BASE_LISTENER = /u01/app/oracle
+
+ENABLE_GLOBAL_DYNAMIC_ENDPOINT_LISTENER=ON # line added by Agent
+
+lsnrctl stop
+lsnrctl start
+
+cdb1=
+(DESCRIPTION =
+(ADDRESS = (PROTOCOL = TCP)(HOST = Host_name)(PORT = 1521))
+(CONNECT_DATA =
+(SERVER = DEDICATED)
+(SERVICE_NAME = cdb1)
+)
+)
+
+cdb1_stby=
+(DESCRIPTION =
+(ADDRESS = (PROTOCOL = TCP)(HOST = Host_name)(PORT = 1521))
+(CONNECT_DATA =
+(SERVER = DEDICATED)
+(SERVICE_NAME = cdb1_stby)
+)
+)
+
+
+#########################################################
+####################On Dataguard server##################
+#########################################################
+
+Setp 1: 
+install oracle database according to your needs.
+
+Step 2: take pfile , passwd file  and backup L0 or L1 in dataguard server.
+
+and setup /etc/hosts file.
+
+Next, establish the required directories on the standby server to match the structure of the primary:
+
+Now set database enviroment in server for database startup .
+
+export ORACLE_SID=Database_Name
+export ORACLE_HOME=Complete_Home_Path
+export PATH=${PATH}:${ORACLE_HOME}/bin
+
+now use Pfile for startup nomount:
+startup nomount pfile='Pfile_Path/initdatabasename.ora';
+
+Output like this:
+ORACLE instance started.
+
+Total System Global Area  8589934592 bytes
+Fixed Size                  9147648 bytes
+Variable Size            1845493760 bytes
+Database Buffers          6710886400 bytes
+Redo Buffers                15859712 bytes
+
+create spfile from pfile;
+File created.
+
+shut immediate;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+
+startup nomount;
+ORACLE instance started.
+
+Total System Global Area  8589934592 bytes
+Fixed Size                  9147648 bytes
+Variable Size            1845493760 bytes
+Database Buffers          6710886400 bytes
+Redo Buffers                15859712 bytes
+
+SHOW PARAMETER spfile;
+
+After that connect to RMAN :
+rman target /
+
+restore standby controlfile from 'Controlfile_location/standbycontrol.ctl';
+
+Now Switch database into mount mode.
+
+alter database mount;
+
+
+Notes:Run catalog command to register backups into new controlfile. If you don't catalog it,
+ it does not identify backups and you will get No backup founds errors.
+ 
+catalog start with 'Backup_Path';
+
+Add PARALLELISM in restoratios:
+CONFIGURE DEVICE TYPE DISK PARALLELISM 30;
+
+Start restore database:
+restore  database;
+
+and after recover database:
+recover database;
+
+For change in log file first we do change in parameters:
+
+ALTER SYSTEM SET STANDBY_FILE_MANAGEMENT = MANUAL; 
+
+Drop the standby logs:
+
+ALTER DATABASE DROP LOGFILE GROUP 8;
+add againe  by this command.
+Add Standby logfile to apply and run realtime dataguard.
+
+alter database add standby logfile group 10 '/u01/oradata/cdb1/standby01.log' size SIZE 50M;
+alter database add standby logfile group 11 '/u01/oradata/cdb1/standby02.log' size SIZE 50M;
+alter database add standby logfile group 12 '/u01/oradata/cdb1/standby03.log' size SIZE 50M;
+alter database add standby logfile group 13 '/u01/oradata/cdb1/standby04.log' size SIZE 50M;
+
+And clear online log file like which groups 1 and  1 ,2 and 2,
+
+clear these 
+ALTER DATABASE CLEAR LOGFILE GROUP 1;
+ALTER DATABASE CLEAR LOGFILE GROUP 2;
+ALTER DATABASE CLEAR LOGFILE GROUP 3;
+
+after commplete this we change parameter files:
+ALTER SYSTEM SET STANDBY_FILE_MANAGEMENT = AUTO; 
+
+
+After Restore is finished,  connect to the Standby database and start the process of the MRP (Managed Recovery Process) and start applying of Redologs to the standby like following.
+
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE USING CURRENT LOGFILE DISCONNECT FROM SESSION;
+
+#########After starting MRP process, we can start monitoring of dataguard like following.#########
+
+select process, client_process,thread#,sequence#,status from v$managed_standby;
+SELECT process, status, thread#, sequence# FROM v$managed_standby WHERE process LIKE 'MRP%';
+
+Send log :
+ALTER SYSTEM SWITCH LOGFILE; ( on primary only)
+
+You can check Dataguard lag with following script.
+select name,value from v$dataguard_stats;
+
+NAME                    VALUE
+----------------------  --------------------
+transport lag           +00 00:00:02
+apply lag               +00 00:00:01
+apply finish time       +00 00:00:00
+estimated startup time  15
+
+For stop MRP : 
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
+No MRP row or status=WAIT_FOR_LOG confirms it's stopped.
+
+Now check parameter in Dataguar server:
+
+set linesize 500 pages 100
+col value for a90
+col name for a50
+select name, value
+from v$parameter
+where name in ('db_name','db_unique_name','log_archive_config', 'log_archive_dest_1','log_archive_dest_2','log_archive_dest_state_1',
+|'log_archive_dest_state_2','remote_login_passwordfile','log_archive_format','log_archive_max_processes','fal_client','fal_server',
+'db_file_name_convert','log_file_name_convert', 'standby_file_management');
+
+
+############################################################
+#####################For Error checking:####################
+############################################################
+Check Detailed Transport & Apply Errors:
+
+SELECT dest_id,
+       status,
+       error
+FROM v$archive_dest
+WHERE target IS NOT NULL;
+
+SET PAGESIZE 50
+SET LINESIZE 200
+SET WRAP OFF
+SET FEEDBACK OFF
+SET VERIFY OFF
+
+COLUMN dest_id        FORMAT 99        HEADING "DEST"
+COLUMN destination    FORMAT A40       HEADING "DESTINATION"
+COLUMN status         FORMAT A10       HEADING "STATUS"
+COLUMN error          FORMAT A60       HEADING "ERROR"
+
+Check Managed Standby Processes (DR SIDE)
+SELECT process,
+       status,
+       client_process,
+       thread#,
+       sequence#
+FROM v$managed_standby;
+
+❌ Error Scenario
+PROCESS  STATUS        CLIENT_PROCESS
+------   ------------ ---------------
+MRP0     WAIT_FOR_GAP  N/A
+
+
+Check Data Guard Error Messages (Hidden but Powerful)
+
+Run on BOTH SERVERS
+
+SELECT message_num,
+       severity,
+       message
+FROM v$dataguard_status
+WHERE severity IN ('Error','Fatal')
+ORDER BY timestamp DESC;
+
+
+For checking alter logs:
+SELECT value FROM v$diag_info WHERE name = 'Diag Trace';
+
+ONE-COMMAND QUICK ERROR CHECK (Best for Interviews)
+Run on BOTH SERVERS
+
+SELECT 'ARCHIVE_DEST' source, error
+FROM v$archive_dest
+WHERE error IS NOT NULL
+UNION ALL
+SELECT 'DG_STATUS', message
+FROM v$dataguard_status
+WHERE severity IN ('Error','Fatal');
+
+
+Set local lsnrctl:
+ALTER SYSTEM SET local_listener='(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=primary-server)(PORT=1521)))' SCOPE=BOTH;
+ALTER SYSTEM REGISTER;
