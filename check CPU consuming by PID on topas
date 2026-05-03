@@ -22,6 +22,28 @@ WHERE s.paddr = p.addr AND s.sql_address = q.address AND s.sql_hash_value = q.ha
 AND p.spid = '41353548';
 
 
+SELECT b.spid        AS os_pid,
+       a.sid,
+       a.serial#,
+       a.username    AS oracle_user,
+       a.osuser      AS os_user,
+       a.status
+FROM   v$session a
+JOIN   v$process b
+       ON a.paddr = b.addr
+WHERE  b.spid = '3885337';
+ 
+ -- Replace 12345 with your OS process ID
+SELECT b.username,
+       a.sql_text
+FROM   v$sqltext_with_newlines a
+JOIN   v$session b
+       ON b.sql_address = a.address
+JOIN   v$process c
+       ON c.addr = b.paddr
+WHERE  c.spid = '1407'
+ORDER BY a.piece;
+
 
 
 db2 "SELECT APPLICATION_HANDLE, AGENT_ID, COORD_AGENT_PID, COORD_AGENT_TID, APPL_STATUS, AUTHID 
