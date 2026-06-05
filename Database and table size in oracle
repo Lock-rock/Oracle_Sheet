@@ -19,6 +19,19 @@ from v$log) used
 from dba_free_space) free
 group by free.p;
 
+or other query:
+SELECT ROUND(SUM(bytes)/POWER(1024,4), 2) AS total_size_tb
+FROM (
+    SELECT bytes FROM dba_data_files
+    UNION ALL
+    SELECT bytes FROM dba_temp_files
+    UNION ALL
+    SELECT bytes FROM v$log
+    UNION ALL
+    SELECT block_size * file_size_blks AS bytes FROM v$controlfile
+);
+
+
 
 ROUND(bytes / (1024 * 1024 * 1024), 2) AS bytes_in_gb 
 
