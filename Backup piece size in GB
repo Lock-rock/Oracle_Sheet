@@ -1,0 +1,47 @@
+To display the backup piece size in GB instead of MB:
+
+SET LINESIZE 200
+SET PAGESIZE 100
+COLUMN RECID FORMAT 999999
+COLUMN HANDLE FORMAT A80
+COLUMN PIECE_SIZE_GB FORMAT 999999.99
+SELECT
+    bs.recid,
+    bp.handle,
+    ROUND(bp.bytes/1024/1024/1024,2) AS piece_size_gb
+FROM v$backup_set bs
+JOIN v$backup_piece bp
+  ON bs.set_stamp = bp.set_stamp
+ AND bs.set_count = bp.set_count
+ORDER BY bs.recid;
+
+
+
+For the total size of each backup set in GB:
+
+SET LINESIZE 200
+COLUMN RECID FORMAT 999999
+COLUMN BACKUPSET_SIZE_GB FORMAT 999999.99
+SELECT
+    bs.recid,
+    ROUND(SUM(bp.bytes)/1024/1024/1024,2) AS backupset_size_gb
+FROM v$backup_set bs
+JOIN v$backup_piece bp
+  ON bs.set_stamp = bp.set_stamp
+ AND bs.set_count = bp.set_count
+GROUP BY bs.recid
+ORDER BY bs.recid;
+
+
+If you want to see only the most recent backup sets:
+
+SELECT
+    bs.recid,
+    bs.completion_time,
+    ROUND(SUM(bp.bytes)/1024/1024/1024,2) AS size_gb
+FROM v$backup_set bs
+JOIN v$backup_piece bp
+  ON bs.set_stamp = bp.set_stamp
+ AND bs.set_count = bp.set_count
+GROUP BY bs.recid, bs.completion_time
+ORDER BY bs.completion_time DESC;
