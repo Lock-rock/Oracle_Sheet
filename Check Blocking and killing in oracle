@@ -1,44 +1,87 @@
-CHECK BLOCKING:
+1. Find Blocking Sessions
 
-SELECT DECODE(request,0,'Holder: ','Waiter: ') || sid sess,
-  id1,
-  id2,
-  lmode,
-  request,
-  type
-FROM v$lock
-WHERE (id1, id2, type) IN
-  (SELECT id1, id2, type FROM v$lock WHERE request > 0
-  )
-ORDER BY id1,
-  request;
+Use this query to see blocked and blocking sessions:
+
+SELECT
+    s1.sid || ',' || s1.serial# AS blocked_session,
+    s1.username AS blocked_user,
+    s2.sid || ',' || s2.serial# AS blocking_session,
+    s2.username AS blocking_user,
+    s1.event,
+    s1.seconds_in_wait
+FROM v$session s1
+JOIN v$session s2
+    ON s1.blocking_session = s2.sid
+WHERE s1.blocking_session IS NOT NULL;
 
 
-FIND SERIAL WITH SID:
-select serial# from v$session where SID=38';
+2. Find All Blocking Sessions:
 
-FIND SID AND CHECK SQL_ID:
-select sql_id from v$session where sid='2379';
+SELECT
+    sid,
+    serial#,
+    username,
+    machine,
+    program,
+    status
+FROM v$session
+WHERE sid IN (
+    SELECT blocking_session
+    FROM v$session
+    WHERE blocking_session IS NOT NULL
+);
 
-FIND SQL_ID TO SQL_QUERY:
-select sql_fulltext from V$sql where sql_id='3sru2kbub05dm';
-select sql_id, state, last_call_et, event, program, osuser from v$session where sql_id='3sru2kbub05dm';
+3. Generate Kill Session Commands:
 
-SELECT s.sid, s.serial#, s.username, s.status, s.machine, s.program
-FROM v$session s
-JOIN v$sqlarea a ON s.sql_id = a.sql_id
-WHERE a.sql_id = 'YOUR_SQL_ID';  -- Replace 'YOUR_SQL_ID' with the actual SQL_ID
+SELECT
+    'ALTER SYSTEM KILL SESSION '''
+    || sid || ',' || serial# ||
+    ''' IMMEDIATE;' AS kill_command
+FROM v$session
+WHERE sid IN (
+    SELECT blocking_session
+    FROM v$session
+    WHERE blocking_session IS NOT NULL
+);
 
-REMOVE THE LOCKS:
-ALTER SYSTEM KILL SESSION '<sid, serial#>'
 
-SELECT 'kill -9 ' || p.spid, s.username,
-'alter system kill session ''' || SID || ',' || s.serial# || ',@'||s.inst_id||''';'
-FROM gv$session s, gv$process p
-WHERE s.paddr = p.addr(+)
-AND s.SID=1391;
+4. Automatic Script to Kill Blocking Sessions
 
-===================================================================================================================
+Use carefully in production, because killing sessions can roll back transactions and impact users.
+
+SET HEADING OFF
+SET FEEDBACK OFF
+
+SPOOL kill_blockers.sql
+
+SELECT
+    'ALTER SYSTEM KILL SESSION '''
+    || sid || ',' || serial# ||
+    ''' IMMEDIATE;'
+FROM v$session
+WHERE sid IN (
+    SELECT DISTINCT blocking_session
+    FROM v$session
+    WHERE blocking_session IS NOT NULL
+);
+
+SPOOL OFF
+
+@kill_blockers.sql
+
+
+5. Safer Version (Blockers Waiting More Than 5 Minutes)
+
+SELECT DISTINCT
+    'ALTER SYSTEM KILL SESSION '''
+    || s2.sid || ',' || s2.serial# ||
+    ''' IMMEDIATE;' AS kill_cmd
+FROM v$session s1
+JOIN v$session s2
+    ON s1.blocking_session = s2.sid
+WHERE s1.seconds_in_wait > 300;
+
+============================================================================================================================================================================================================================
 Find Blocked Sessions:
 
 select a.SID "Blocking Session", b.SID "Blocked Session"  
