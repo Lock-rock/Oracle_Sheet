@@ -20,3 +20,15 @@ SELECT tablespace_name,
        maxbytes/1024/1024 AS max_mb
 FROM dba_data_files
 ORDER BY tablespace_name;
+
+check tablespace with autoexted on base of 32 gb.
+SELECT 
+    tablespace_name,
+    ROUND(tablespace_size * 8192 / 1024 / 1024, 2) AS max_size_mb,
+    ROUND(used_space * 8192 / 1024 / 1024, 2) AS used_space_mb,
+    ROUND((tablespace_size - used_space) * 8192 / 1024 / 1024, 2) AS true_free_space_mb,
+    ROUND(used_percent, 2) AS used_percent
+FROM 
+    dba_tablespace_usage_metrics
+ORDER BY 
+    used_percent DESC;
