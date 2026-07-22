@@ -219,6 +219,22 @@ catalog start with 'Backup_Path';
 Add PARALLELISM in restoratios:
 CONFIGURE DEVICE TYPE DISK PARALLELISM 30;
 
+Create restoration file:
+vi cat restore.sh
+export ORACLE_SID=PEGAPRD
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0/dbhome_1
+export PATH=$PATH:$ORACLE_HOME/bin
+export TODAY=`date +"%d_%b_%y"`
+$ORACLE_HOME/bin/rman target /  << EOF
+RUN
+{
+restore database;
+}
+EOF
+ 
+OR
+
 Start restore database:
 restore  database;
 
