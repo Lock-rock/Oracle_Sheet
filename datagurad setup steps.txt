@@ -371,3 +371,10 @@ WHERE severity IN ('Error','Fatal');
 Set local lsnrctl:
 ALTER SYSTEM SET local_listener='(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=primary-server)(PORT=1521)))' SCOPE=BOTH;
 ALTER SYSTEM REGISTER;
+
+============================================================================================================================================
+Disable LOG_ARCHIVE_DEST_
+ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_2=DEFER;
+ALTER SYSTEM SET LOG_ARCHIVE_DEST_STATE_2=ENABLE;
+
+SELECT DEST_ID, DESTINATION, TARGET, STATUS, ERROR FROM V$ARCHIVE_DEST ORDER BY DEST_ID;
