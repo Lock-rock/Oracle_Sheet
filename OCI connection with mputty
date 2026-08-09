@@ -1,3 +1,13 @@
+first open mputty.
+
+the click on add server .
+fill all deatil and leave user passwd.
+
+see command line at last .
+
+add this below command with change in details according to you server and key.
+
+
 Host_IP -ssh -P 22 -i "Full_Path_of_Key"
 
 Example: 
