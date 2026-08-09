@@ -1,0 +1,4 @@
+Host_IP -ssh -P 22 -i "Full_Path_of_Key"
+
+Example: 
+172.18.XX.XX -ssh -P 22 -i "C:\Users\kuldeeprawat.ext\Documents\key for dr\Digi_DB_PVT.ppk"
