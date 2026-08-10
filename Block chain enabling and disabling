@@ -1,0 +1,18 @@
+First check: status of BCT
+SELECT filename, status FROM v$block_change_tracking;
+
+Possible statuses include ENABLED and DISABLED
+
+
+Enable Block Change Tracking:
+
+ALTER DATABASE ENABLE BLOCK CHANGE TRACKING USING FILE '/u01/app/oracle/block_change_tracking.bct';
+
+
+Disable BCT:
+
+ALTER DATABASE DISABLE BLOCK CHANGE TRACKING;
+
+RAC / ASM Example:
+ALTER DATABASE ENABLE BLOCK CHANGE TRACKING
+USING FILE '+DATA';
