@@ -1,0 +1,135 @@
+Check OPatch Version: Ensure you have the latest OPatch utility compatible with your Oracle version.
+Step 1: Prepare the Environment
+$ORACLE_HOME/OPatch/opatch version
+Result:
+OPatch Version: 12.2.0.1.17
+
+2. Take Oracle Home Backup
+Backup ORACLE_HOME: Take a backup of the current ORACLE_HOME directory for rollback purposes.
+
+tar -cvf /u04/patch/oracle_home_backup.tar $ORACLE_HOME
+Result:
+a /u01/app/oracle/product/19.0.0/dbhome_1
+a /u01/app/oracle/product/19.0.0/dbhome_1/.opatchauto_storage
+a /u01/app/oracle/product/19.0.0/dbhome_1/.opatchauto_storage/system_patches
+a /u01/app/oracle/product/19.0.0/dbhome_1/.opatchauto_storage/system_patches/29547676
+a /u01/app/oracle/product/19.0.0/dbhome_1/.opatchauto_storage/system_patches/29547676/bundle.xml 10 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.opatchauto_storage/system_patches/systemPatchInformationStore.xml 1 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/original_patch
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/original_patch/README.html 141 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/original_patch/README.txt 1 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/original_patch/etc
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/original_patch/etc/config
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/original_patch/etc/config/actions.xml 207 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/original_patch/etc/config/inventory.xml 129 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/rollback.sh 3 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29517242_Apr_17_2019_23_27_10/unchanged_files.txt 0 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29585399_Apr_9_2019_19_12_47
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29585399_Apr_9_2019_19_12_47/original_patch
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29585399_Apr_9_2019_19_12_47/original_patch/README.txt 42 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/.patch_storage/29585399_Apr_9_2019_19_12_47/original_patch/custom
+
+
+3. Take Oracle Inventory Backup
+tar -cvf /u04/patch/oraInventory_backup_$(date +%Y%m%d).tar.gz /u01/app/oraInventory
+Result:
+a /u01/app/oraInventory
+a /u01/app/oraInventory/ContentsXML
+a /u01/app/oraInventory/ContentsXML/comps.xml 1 blocks.
+a /u01/app/oraInventory/ContentsXML/inventory.xml 1 blocks.
+a /u01/app/oraInventory/ContentsXML/libs.xml 1 blocks.
+a /u01/app/oraInventory/ContentsXML/oui-patch.xml 1 blocks.
+a /u01/app/oraInventory/logs
+a /u01/app/oraInventory/logs/InstallActions2026-04-11_05-37-22PM
+a /u01/app/oraInventory/logs/InstallActions2026-04-11_05-37-22PM/installActions2026-04-11_05-37-22PM.err 0 blocks.
+a /u01/app/oraInventory/logs/InstallActions2026-04-11_05-37-22PM/installActions2026-04-11_05-37-22PM.log 22913 blocks.
+a /u01/app/oraInventory/logs/InstallActions2026-04-11_05-37-22PM/installActions2026-04-11_05-37-22PM.out 4576 blocks.
+a /u01/app/oraInventory/logs/InstallActions2026-04-11_05-37-22PM/installerPatchActions_2026-04-11_05-37-22PM.log 1 blocks.
+a /u01/app/oraInventory/logs/InstallActions2026-04-11_05-37-22PM/oraInstall2026-04-11_05-37-22PM.err 0 blocks.
+a /u01/app/oraInventory/logs/InstallActions2026-04-11_05-37-22PM/oraInstall2026-04-11_05-37-22PM.out 1 blocks.
+a /u01/app/oraInventory/logs/InstallActions2026-04-11_05-37-22PM/time2026-04-11_05-37-22PM.log 152 blocks.
+a /u01/app/oraInventory/oraInst.loc 1 blocks.
+a /u01/app/oraInventory/orainstRoot.sh 4 blocks.
+
+5. Backup Network Configuration
+tar -cvf /u04/patch/network_admin_backup.tar.gz $ORACLE_HOME/network/admin
+Result:
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/08082026listener.ora 2 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/08082026tnsnames.ora 3 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/listener2410117PM1558.bak 1 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/listener2501179AM2645.bak 2 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/samples
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/samples/listener.ora 8 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/samples/sqlnet.ora 65 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/samples/tnsnames.ora 6 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/shrept.lst 3 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/sqlnet.ora 1 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/sqlnet2410117PM1558.bak 1 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/sqlnet2501179AM2645.bak 1 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/tnsnames2410117PM1558.bak 3 blocks.
+a /u01/app/oracle/product/19.0.0/dbhome_1/network/admin/tnsnames2501179AM2645.bak 3 blocks.
+
+4. Backup OPatch Information (Recommended)
+$ORACLE_HOME/OPatch/opatch lsinventory -detail > /u04/patch/opatch_inventory_$(date +%Y%m%d).log
+Result:
+$ORACLE_HOME/OPatch/opatch lsinventory -detail > /u04/patch/opatch_inventory_$(date +%Y%m%d).log
+
+5. Analyze the Patch
+cd /u01/stage/<patch_number> $ORACLE_HOME/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -ph ./
+
+Download Patch: Obtain the required patch from My Oracle Support and place it in an accessible directory.
+
+Step 2: Shutdown Services
+
+Stop the database and listener:
+
+sqlplus / as sysdba
+SQL> shutdown immediate;
+lsnrctl stop
+Copy
+Step 3: Apply the Patch
+
+Unzip the patch file:
+
+unzip p<patch_number>.zip -d /path/to/patch_directory
+Copy
+Navigate to the patch directory and apply it:
+
+cd /path/to/patch_directory
+opatch apply
+Copy
+Confirm prompts during the patching process.
+
+Step 4: Post-Patching Steps
+
+Start the database and listener:
+
+sqlplus / as sysdba
+SQL> startup;
+lsnrctl start
+Copy
+Run datapatch to update SQL components:
+
+cd $ORACLE_HOME/OPatch
+/datapatch -verbose
+Copy
+Step 5: Verify Patch Application
+
+Check applied patches:
+
+$ORACLE_HOME/OPatch/opatch lsinventory
+Copy
+Validate SQL patches:
+
+SELECT * FROM dba_registry_sqlpatch;
+Copy
+Best Practices
+
+Always test patches in a non-production environment first.
+
+Ensure all dependent services are stopped before applying patches.
+
+Keep a rollback plan ready by backing up ORACLE_HOME.
