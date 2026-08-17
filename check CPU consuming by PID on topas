@@ -83,3 +83,6 @@ Check Execution Plan:
 SELECT *
 FROM TABLE(dbms_xplan.display_cursor('d1artacv3q7xu'));
 
+Kill jobs:
+alter system kill session '14,19721' immediate;
+
