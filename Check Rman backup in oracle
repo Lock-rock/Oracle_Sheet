@@ -68,3 +68,19 @@ output_bytes_display,
 output_device_type
 from v$rman_backup_job_details
 order by start_time desc;
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Check recent RMAN jobs:
+
+col TIME_TAKEN_DISPLAY for a15;
+col INPUT_BYTES_DISPLAY for a15;
+SELECT
+    START_TIME,
+    END_TIME,
+    INPUT_BYTES_DISPLAY,
+    OUTPUT_BYTES_DISPLAY,
+    TIME_TAKEN_DISPLAY
+FROM V$RMAN_BACKUP_JOB_DETAILS
+ORDER BY START_TIME DESC;
+
