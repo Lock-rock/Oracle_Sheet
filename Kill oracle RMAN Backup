@@ -6,6 +6,21 @@ FROM V$SESSION_LONGOPS
 WHERE OPNAME LIKE 'RMAN%' AND OPNAME NOT LIKE '%aggregate%'
 AND TOTALWORK! = 0 AND SOFAR <> TOTALWORK;
 
+OR
+
+SELECT s.sid,
+       s.serial#,
+       p.spid OS_PID,
+       s.username,
+       s.program,
+       s.sql_id
+FROM v$session s,
+     v$process p
+WHERE s.paddr = p.addr
+  AND s.program LIKE 'rman%';
+
+
+Output:
 
        SID    SERIAL#    CONTEXT      SOFAR  TOTALWORK % COMPLETE
 ---------- ---------- ---------- ---------- ---------- ----------
