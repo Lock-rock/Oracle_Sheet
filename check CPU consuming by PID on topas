@@ -1,12 +1,11 @@
 First check topas :
-
+topas
 
 now check PID that consuming cpu:
 
 SELECT spid, pname, program FROM v$process WHERE spid = '131336';
 
-
-
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 SELECT RPAD('USERNAME : ' || s.username, 80) ||
 RPAD('OSUSER : ' || s.osuser, 80) ||
@@ -21,6 +20,7 @@ FROM v$session s ,v$process p ,v$sql q
 WHERE s.paddr = p.addr AND s.sql_address = q.address AND s.sql_hash_value = q.hash_value
 AND p.spid = '41353548';
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 SELECT b.spid        AS os_pid,
        a.sid,
@@ -44,9 +44,42 @@ JOIN   v$process c
 WHERE  c.spid = '1407'
 ORDER BY a.piece;
 
-
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 db2 "SELECT APPLICATION_HANDLE, AGENT_ID, COORD_AGENT_PID, COORD_AGENT_TID, APPL_STATUS, AUTHID 
      FROM SYSIBMADM.SNAPAPPL 
      WHERE COORD_AGENT_PID = 131336"
 SELECT spid, pname, program FROM v$process WHERE spid = '131336';
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+long running query and CPU consumming query:
+
+SELECT sql_id,
+       ROUND(cpu_time / 1000000 / 60, 2) AS cpu_minutes,
+       executions,
+       SUBSTR(sql_text, 1, 80) AS sql_text
+FROM v$sql
+ORDER BY cpu_time DESC
+FETCH FIRST 20 ROWS ONLY;
+
+
+Check if it is Currently Active
+SELECT sid,
+       serial#,
+       username,
+       status,
+       sql_id
+FROM v$session
+WHERE sql_id='d1artacv3q7xu';
+
+Get Complete SQL Text:
+SELECT sql_fulltext
+FROM v$sql
+WHERE sql_id='d1artacv3q7xu';
+
+
+Check Execution Plan:
+
+SELECT *
+FROM TABLE(dbms_xplan.display_cursor('d1artacv3q7xu'));
+
