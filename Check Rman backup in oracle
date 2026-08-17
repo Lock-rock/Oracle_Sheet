@@ -1,4 +1,4 @@
-SHOW HOURS:
+RMAN BACKUP JOB EXECUTION HISTORY SHOW HOURS:
 
 set lines 300
 col STATUS format a22
@@ -7,13 +7,12 @@ select
 SESSION_KEY, SESSION_RECID, SESSION_STAMP,INPUT_TYPE, STATUS,
 to_char(START_TIME,'mm/dd/yy hh24:mi') start_time,
 to_char(END_TIME,'mm/dd/yy hh24:mi')   end_time,
-elapsed_seconds/3600                   hrs
+elapsed_seconds/3600 hrs
 from V$RMAN_BACKUP_JOB_DETAILS
 order by session_key;
 
-
-
-
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+RMAN BACKUP PROGRESS (ACTIVE OPERATIONS):
 
 SELECT SID, SERIAL#, CONTEXT, SOFAR, TOTALWORK,
 ROUND (SOFAR/TOTALWORK*100, 2) "% COMPLETE"
@@ -21,7 +20,8 @@ FROM V$SESSION_LONGOPS
 WHERE OPNAME LIKE 'RMAN%' AND OPNAME NOT LIKE '%aggregate%'
 AND TOTALWORK! = 0 AND SOFAR <> TOTALWORK;
 
-
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+RMAN BACKUP PERFORMANCE AND THROUGHPUT REPORT:
 
 set linesize 180 heading off
 set heading on pagesize 200
@@ -51,3 +51,20 @@ b.time_taken_display TIME_TAKEN
 FROM v$rman_backup_job_details b
 WHERE b.start_time > (SYSDATE - &amp)
 ORDER BY b.start_time desc;
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Verify Actual Utilization
+
+Check backup throughput:
+col OUTPUT_BYTES_DISPLAY for a15;
+select
+session_key,
+input_type,
+start_time,
+end_time,
+output_bytes_display,
+output_device_type
+from v$rman_backup_job_details
+order by start_time desc;
