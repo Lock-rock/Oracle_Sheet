@@ -1,3 +1,11 @@
+Check Archive Generation:
+
+SELECT ROUND(SUM(BLOCKS*BLOCK_SIZE)/1024/1024/1024,2) GB
+FROM V$ARCHIVED_LOG
+WHERE FIRST_TIME > SYSDATE-1;
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 rman target /
 list archivelog all;
 crosscheck archivelog all;
