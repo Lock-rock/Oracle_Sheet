@@ -1,0 +1,49 @@
+1. Check LAST_LOGIN (Oracle 12c and later)
+SELECT username,
+       account_status,
+       last_login
+FROM dba_users
+WHERE username = 'ITGI_RI';
+
+2. If LAST_LOGIN is NULL
+
+This can happen if:
+
+The user has never logged in.
+The database version does not populate the column.
+Authentication method does not update LAST_LOGIN.
+
+In that case, check audit records.
+
+3. Check login history from Unified Audit Trail:
+SELECT event_timestamp,
+       dbusername,
+       action_name,
+       return_code
+FROM unified_audit_trail
+WHERE dbusername = 'ITGI_RI'
+  AND action_name = 'LOGON'
+ORDER BY event_timestamp DESC;
+``
+
+RETURN_CODE = 0 indicates a successful login.
+
+4. Traditional auditing (if enabled):
+SELECT username,
+       timestamp,
+       returncode
+FROM dba_audit_session
+WHERE username = 'ITGI_RI'
+ORDER BY timestamp DESC;
+
+5. Check currently connected sessions:
+SELECT username,
+       sid,
+       serial#,
+       status,
+       logon_time,
+       machine,
+       program
+FROM v$session
+WHERE username = 'ITGI_RI';
+
