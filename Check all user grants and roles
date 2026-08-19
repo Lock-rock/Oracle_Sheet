@@ -9,30 +9,14 @@ check grant on user in oracle database:
 select * from dba_role_privs connect by prior granted_role = grantee start with grantee = '&USER' order by 1,2,3;
 select * from dba_sys_privs  where grantee = '&USER' or grantee in (select granted_role from dba_role_privs connect by prior granted_role = grantee start with grantee = '&USER') order by 1,2,3;
 select * from dba_tab_privs  where grantee = '&USER' or grantee in (select granted_role from dba_role_privs connect by prior granted_role = grantee start with grantee = '&USER') order by 1,2,3,4;
-=====================================================================================================================
--- Replace 'username' with the actual username you want to check
-SET LINESIZE 200
-SET PAGESIZE 100
-COLUMN privilege FORMAT A30
+====================================================================================================================================================================================================================
+| Query                                                  | Suggested Title                                  | Description                                                                                      |
+| ------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------------|
+| SELECT * FROM DBA_ROLE_PRIVS WHERE GRANTEE = 'HRMS'; | **Roles Granted to HRMS User**                   | Displays all roles assigned to the `HRMS` database user.                                           |
+| SELECT * FROM DBA_SYS_PRIVS WHERE GRANTEE = 'HRMS';  | **System Privileges Granted to HRMS User**       | Displays all system privileges granted directly to the `HRMS` user.                                |
+| SELECT * FROM DBA_TAB_PRIVS WHERE GRANTEE = 'HRMS';  | **Object/Table Privileges Granted to HRMS User** | Displays all object-level privileges (tables, views, procedures, etc.) granted to the `HRMS` user. |
 
--- Query for system privileges
-SELECT * 
-FROM dba_sys_privs 
-WHERE grantee = 'USERNAME';
-
--- Query for object privileges
-SELECT * 
-FROM dba_tab_privs 
-WHERE grantee = 'USERNAME';
-
--- Query for role privileges
-SELECT * 
-FROM dba_role_privs 
-WHERE grantee = 'USERNAME';
-SELECT USERNAME, ACCOUNT_STATUS
-FROM DBA_USERS
-WHERE USERNAME = 'BIXUSER';
-=====================================================================================================================
+=====================================================================================================================================================================================================================
 
 SELECT 'GRANT ' || privilege || ' TO ITGI_RI' AS grant_statement
 FROM dba_sys_privs 
@@ -62,3 +46,25 @@ SELECT * FROM DBA_ROLE_PRIVS WHERE GRANTEE = 'AGREEMENT_REPO';
 
 Check privileges granted through roles:
 SELECT * FROM ROLE_SYS_PRIVS WHERE ROLE IN (SELECT GRANTED_ROLE FROM DBA_ROLE_PRIVS WHERE GRANTEE = 'AGREEMENT_REPO');
+
+==================================================================================================================================================================================================
+1. Roles Granted to the RESOURCE Role:
+
+SELECT granted_role
+FROM dba_role_privs
+WHERE grantee = 'RESOURCE';
+
+2. System Privileges Directly Granted to the RESOURCE Role:
+
+SELECT privilege
+FROM dba_sys_privs
+WHERE grantee = 'RESOURCE'
+ORDER BY privilege;
+
+3. System Privileges Contained Within the RESOURCE Role:
+
+SELECT *
+FROM role_sys_privs
+WHERE role = 'RESOURCE';
+
+==================================================================================================================================================================================================
