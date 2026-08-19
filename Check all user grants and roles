@@ -3,19 +3,18 @@ check privs on database:
 SELECT * FROM USER_SYS_PRIVS; 
 SELECT * FROM USER_TAB_PRIVS;
 SELECT * FROM USER_ROLE_PRIVS;
-
+====================================================================================================================================================================================================================
 check grant on user in oracle database:
 
 select * from dba_role_privs connect by prior granted_role = grantee start with grantee = '&USER' order by 1,2,3;
 select * from dba_sys_privs  where grantee = '&USER' or grantee in (select granted_role from dba_role_privs connect by prior granted_role = grantee start with grantee = '&USER') order by 1,2,3;
 select * from dba_tab_privs  where grantee = '&USER' or grantee in (select granted_role from dba_role_privs connect by prior granted_role = grantee start with grantee = '&USER') order by 1,2,3,4;
 ====================================================================================================================================================================================================================
-| Query                                                  | Suggested Title                                  | Description                                                                                      |
-| ------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------------|
+| Query                                                | Suggested Title                                  | Description                                                                                        |
+| ---------------------------------------------------- | -------------------------------------------------| -------------------------------------------------------------------------------------------------  |
 | SELECT * FROM DBA_ROLE_PRIVS WHERE GRANTEE = 'HRMS'; | **Roles Granted to HRMS User**                   | Displays all roles assigned to the `HRMS` database user.                                           |
 | SELECT * FROM DBA_SYS_PRIVS WHERE GRANTEE = 'HRMS';  | **System Privileges Granted to HRMS User**       | Displays all system privileges granted directly to the `HRMS` user.                                |
 | SELECT * FROM DBA_TAB_PRIVS WHERE GRANTEE = 'HRMS';  | **Object/Table Privileges Granted to HRMS User** | Displays all object-level privileges (tables, views, procedures, etc.) granted to the `HRMS` user. |
-
 =====================================================================================================================================================================================================================
 
 SELECT 'GRANT ' || privilege || ' TO ITGI_RI' AS grant_statement
