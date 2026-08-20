@@ -1,3 +1,174 @@
 -- Check invalid objects
 
 SELECT owner, object_name, object_type FROM dba_objects WHERE status='INVALID' AND owner='HR';
+
+
+Step 1: Check Invalid Objects:
+SELECT owner,
+       object_name,
+       object_type,
+       status
+FROM dba_objects
+WHERE owner = 'SCHEMA_NAME'
+  AND status = 'INVALID'
+ORDER BY object_type, object_name;
+
+
+Or as schema owner:
+SELECT object_name,
+       object_type,
+       status
+FROM user_objects
+WHERE status = 'INVALID';
+
+Step 2: Recompile the Entire Schema:
+Option A: Use Oracle Supplied Package (Recommended)
+EXEC DBMS_UTILITY.COMPILE_SCHEMA(
+    schema => 'SCHEMA_NAME',
+    compile_all => FALSE
+);
+
+
+Option B: Use UTL_RECOMP (Faster for Large Schemas) As SYS:
+EXEC UTL_RECOMP.RECOMP_SERIAL();
+
+Or parallel:
+EXEC UTL_RECOMP.RECOMP_PARALLEL(8);
+
+Step 3: Run Oracle Recompile Script:
+Connect as SYSDBA:
+sqlplus / as sysdba
+
+Then run:
+@?/rdbms/admin/utlrp.sql
+
+This is Oracle's standard script to recompile invalid objects after upgrades, imports, and patching.
+
+
+Step 4: Check Remaining Invalid Objects:
+SELECT owner,
+       object_name,
+       object_type
+FROM dba_objects
+WHERE status = 'INVALID'
+ORDER BY owner, object_type;
+
+If no rows are returned, all objects are valid.
+
+
+Step 5: Identify Compilation Errors:
+For objects that remain invalid:
+
+Packages, Procedures, Functions
+SHOW ERRORS
+
+or 
+
+SELECT line,
+       position,
+       text
+FROM dba_errors
+WHERE owner = 'SCHEMA_NAME'
+ORDER BY name, sequence;
+
+Specific object:
+SELECT *
+FROM dba_errors
+WHERE owner = 'HR'
+  AND name = 'PACKAGE_NAME';
+
+===========================================================================================================================================================================================================================================================================
+
+Common Reasons Objects Stay Invalid
+
+1. Missing Tables or Views
+
+Example:
+ORA-00942: table or view does not exist
+
+Verify that referenced objects exist.
+
+2. Missing Grants
+
+Example:
+GRANT SELECT ON SCOTT.EMP TO HR;
+
+Then recompile:
+ALTER PACKAGE pkg_name COMPILE;
+
+3. Missing Database Links:
+SELECT * FROM dba_db_links;
+Recreate any required DB links.
+
+4. Missing Synonyms
+SELECT *
+FROM dba_synonyms
+WHERE owner='HR';
+
+Recreate missing synonyms.
+
+5. Missing Oracle Components
+
+Sometimes imported objects depend on components such as:
+
+Spatial (SDO)
+XML DB
+Oracle Text
+APEX
+
+Check:
+SELECT comp_name, status
+FROM dba_registry;
+
+All required components should be VALID.
+
+Recompile Individual Object Examples
+
+Package:
+ALTER PACKAGE pkg_name COMPILE;
+ALTER PACKAGE pkg_name COMPILE BODY;
+
+Procedure:
+ALTER PROCEDURE proc_name COMPILE;
+
+Function:
+ALTER FUNCTION func_name COMPILE;
+
+View:
+ALTER VIEW view_name COMPILE;
+
+Trigger:
+ALTER TRIGGER trigger_name COMPILE;
+
+Useful Post-Import Validation:
+-- Invalid objects count
+SELECT object_type,
+       COUNT(*)
+FROM dba_objects
+WHERE owner='SCHEMA_NAME'
+AND status='INVALID'
+GROUP BY object_type;
+
+-- Compile errors
+SELECT owner,
+       name,
+       type,
+       line,
+       text
+FROM dba_errors
+WHERE owner='SCHEMA_NAME';
+
+A typical post-import workflow is:
+@?/rdbms/admin/utlrp.sql
+
+SELECT COUNT(*)
+FROM dba_objects
+WHERE owner='SCHEMA_NAME'
+AND status='INVALID';
+
+SELECT *
+FROM dba_errors
+WHERE owner='SCHEMA_NAME';
+
+If you share a specific error such as ORA-04063, ORA-00942, ORA-06508, or the output of DBA_ERRORS, I can help diagnose the exact cause and fix.
+
