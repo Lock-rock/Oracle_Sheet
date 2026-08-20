@@ -1,0 +1,3 @@
+-- Check invalid objects
+
+SELECT owner, object_name, object_type FROM dba_objects WHERE status='INVALID' AND owner='HR';
