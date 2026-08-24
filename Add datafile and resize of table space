@@ -24,7 +24,7 @@ STARTUP;
 Related Check
 
 To see how close you are to the limit:
-SELECT (SELECT COUNT(*) FROM v$datafile) current_datafiles,(SELECT values FROM v$parameter WHERE name='db_files') max_db_files FROM dual;
+SELECT (SELECT COUNT(*) FROM v$datafile) current_datafiles,(SELECT value FROM v$parameter WHERE name='db_files') max_db_files FROM dual;
 
 
 ======================================================Query to Check File_name, initial size and maxsize:===============================================================================================================================================================
