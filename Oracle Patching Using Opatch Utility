@@ -1,0 +1,112 @@
+Oracle Patching Using Opatch Utility
+Opatch:
+It is a utility for patching Oracle software, specifically Oracle databases and related products. It is used to apply, roll back, and check Oracle patches, including interim patches, one-off patches, and bundle patches.
+
+Needed:
+OPatch version (12.2.0.1.30 or later for Oracle 19c). Opatch file name is p6880880_200000_Linux-x86-64.zip
+Patch from https://updates.oracle.com/download/29834717.html . Patch file name is p31771877_190000_Linux-x86-64.zip
+
+Step 1: Check Opatch Version:
+$cd /usr/local/oracle/19c/OPatch/
+$./opatch version
+OPatch Version: 12.2.0.1.17
+OPatch succeeded.
+
+Step 2: Update the Opatch Tool:
+$ pwd
+/usr/local/oracle/19c
+$ mv OPatch/ OPatch_BKP
+$ unzip p6880880_200000_Linux-x86-64.zip
+Archive: p6880880_200000_Linux-x86-64.zip
+creating: OPatch/
+inflating: OPatch/emdpatch.pl
+creating: OPatch/oracle_common/
+creating: OPatch/oracle_common/modules/
+inflating: OPatch/oracle_common/modules/com.oracle.glcm.common-logging_1.6.5.0.jar
+inflating: OPatch/oracle_common/modules/common-logging-config.jar
+creating: OPatch/oplan/
+
+
+$ cd OPatch
+$ ./opatch version
+OPatch Version: 12.2.0.1.23
+OPatch succeeded.
+
+Step 3: Check the Patche status for current:
+SET LINESIZE 500
+SET PAGESIZE 1000
+SET SERVEROUT ON
+SET LONG 2000000
+COLUMN action_time FORMAT A12
+COLUMN action FORMAT A10
+COLUMN comments FORMAT A30
+COLUMN description FORMAT A60
+COLUMN namespace FORMAT A20
+COLUMN status FORMAT A10
+
+SELECT TO_CHAR(action_time, 'YYYY-MM-DD') AS action_time,action,status, description,patch_id FROM sys.dba_registry_sqlpatch ORDER by action_time;
+
+
+col comp_id for a10
+col version for a11
+col status for a10
+col comp_name for a37
+select comp_id,comp_name,version,status from dba_registry;
+
+Identifying Invalid Objects
+COLUMN object_name FORMAT A30
+SELECT owner, object_type, object_name, status FROM dba_objects WHERE status = ‘INVALID’ ORDER BY owner, object_type, object_name;
+
+Step 4: Down the Database and listener
+Step 5: take Backup on Oracle Home and Inventory Directories or RMAN Full Backup
+Step 6: Run the Optach utility.
+$ unzip p31771877_190000_Linux-x86-64.zip
+$ cd 31771877
+export ORACLE_HOME=/usr/local/oracle/19c/
+export PATH=/usr/local/oracle/19c/OPatch:$PATH
+opatch apply
+
+OR
+
+$ unzip p31771877_190000_Linux-x86-64.zip
+$ cd 31771877
+/u01/app/oracle/product/19.0.0/dbhome_1/OPatch/opatch apply -oh /u01/app/oracle/product/19.0.0/dbhome_1
+
+
+Step 7: List Patches
+/u01/app/oracle/product/19.0.0/dbhome_1/OPatch/opatch lsinv -oh /u01/app/oracle/product/19.0.0/dbhome_1
+
+Step 8: start the database and listener
+Step 9: Apply the SQL Changes run datapatch
+/u01/app/oracle/product/19.0.0/dbhome_1/OPatch/datapatch -verbose
+
+Step 10: Verify the DBA_REGISTRY_SQLPATCH
+SET LINESIZE 500
+SET PAGESIZE 1000
+SET SERVEROUT ON
+SET LONG 2000000
+COLUMN action_time FORMAT A12
+COLUMN action FORMAT A10
+COLUMN patch_type FORMAT A10
+COLUMN description FORMAT A32
+COLUMN status FORMAT A10
+COLUMN version FORMAT A10
+spool check_patches_19c.txt
+
+select CON_ID, TO_CHAR(action_time, 'YYYY-MM-DD') AS action_time, PATCH_ID, PATCH_TYPE, ACTION, DESCRIPTION, SOURCE_VERSION, TARGET_VERSION from CDB_REGISTRY_SQLPATCH order by CON_ID, action_time, patch_id;
+spool off
+
+
+Step 10: verify the invalid Objects:
+SQL> select count(*) from dba_objects where status='INVALID';
+
+Any Invalid objcects Run Below
+@?/rdbms/admin/utlrp.sql
+
+Check the last updated OPatch
+/u01/app/oracle/product/19.0.0/dbhome_1/OPatch/opatch lsinventory
+/u01/app/oracle/product/19.0.0/dbhome_1/OPatch/opatch lspatches
+
+Rolling Back a Patch (If Needed)
+/u01/app/oracle/product/19.0.0/dbhome_1/OPatch /opatch rollback -id 31771877
+
