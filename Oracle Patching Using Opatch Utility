@@ -5,7 +5,7 @@ It is a utility for patching Oracle software, specifically Oracle databases and 
 Needed:
 OPatch version (12.2.0.1.30 or later for Oracle 19c). Opatch file name is p6880880_200000_Linux-x86-64.zip
 Patch from https://updates.oracle.com/download/29834717.html . Patch file name is p31771877_190000_Linux-x86-64.zip
-
+!
 Step 1: Check Opatch Version:
 $cd /usr/local/oracle/19c/OPatch/
 $./opatch version
