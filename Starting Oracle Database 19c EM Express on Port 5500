@@ -1,0 +1,36 @@
+1. Connect as SYSDBA
+sqlplus / as sysdba
+
+
+2. Check the current HTTPS port
+SELECT DBMS_XDB_CONFIG.GETHTTPSPORT() FROM dual;
+
+
+3. Set it to 5500
+EXEC DBMS_XDB_CONFIG.SETHTTPSPORT(5500);
+
+
+Then verify:
+SELECT DBMS_XDB_CONFIG.GETHTTPSPORT() FROM dual;
+
+It should return:
+5500
+
+
+4. Make sure the database is running
+SELECT status FROM v$instance;
+
+
+If it isn't OPEN:
+STARTUP;
+
+
+5. Access EM Express
+Open: 
+https://localhost:5500/em
+
+
+If you're accessing it from another machine, use:
+https://<oracle-server-ip>:5500/em
+
+
