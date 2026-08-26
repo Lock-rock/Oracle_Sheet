@@ -1,0 +1,18 @@
+Set column size:
+COLUMN employee_name FORMAT A30
+
+check column size at present:
+col column name;
+
+Increase the line size:  like ---
+SET LINESIZE 200;
+
+use --- to ==
+SET UNDERLINE '='
+
+undo
+SET UNDERLINE OFF
+
+
+Set page size:
+SET PAGESIZE 20
