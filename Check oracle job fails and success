@@ -1,0 +1,1 @@
+SELECT log_id,job_name,status,error#,additional_info FROM dba_scheduler_job_run_details WHERE job_name LIKE '%AUTO%' ORDER BY log_date DESC;
