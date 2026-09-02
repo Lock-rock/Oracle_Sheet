@@ -7,6 +7,10 @@ OPatch Version: 12.2.0.1.17
 2. Take Oracle Home Backup
 Backup ORACLE_HOME: Take a backup of the current ORACLE_HOME directory for rollback purposes.
 
+OR
+Also take this backup when oracle shutdown.
+cp -pr /u01/app/oracle/product/19.0.0/dbhome_1 /pegahome
+
 tar -cvf /backup/opathbkp/oracle_home_backup.tar $ORACLE_HOME
 Result:
 a /u01/app/oracle/product/19.0.0/dbhome_1
