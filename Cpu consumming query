@@ -1,0 +1,75 @@
+First download awr report:
+
+1. Check SQLs running in a time interval (ASH)
+
+SELECT
+    sample_time,
+    session_id,
+    session_serial#,
+    sql_id,
+    event,
+    module,
+    program
+FROM v$active_session_history
+WHERE sample_time BETWEEN
+      TO_TIMESTAMP('2026-09-03 10:00:00','YYYY-MM-DD HH24:MI:SS')
+  AND TO_TIMESTAMP('2026-09-03 10:30:00','YYYY-MM-DD HH24:MI:SS')
+ORDER BY sample_time;
+
+
+3. Historical activity (AWR licensed)
+
+SELECT
+    sample_time,
+    session_id,
+    sql_id,
+    event,
+    program
+FROM dba_hist_active_sess_history
+WHERE sample_time BETWEEN
+      TO_TIMESTAMP('2026-09-03 10:00:00','YYYY-MM-DD HH24:MI:SS')
+  AND TO_TIMESTAMP('2026-09-03 10:30:00','YYYY-MM-DD HH24:MI:SS')
+ORDER BY sample_time;
+
+
+
+4. Find top SQLs executed in a time range
+SELECT
+    ash.sql_id,
+    COUNT(*) samples
+FROM dba_hist_active_sess_history ash
+WHERE ash.samples_time BETWEEN
+      TO_TIMESTAMP('2026-09-03 10:00:00','YYYY-MM-DD HH24:MI:SS')
+  AND TO_TIMESTAMP('2026-09-03 10:30:00','YYYY-MM-DD HH24:MI:SS')
+GROUP BY ash.sql_id
+ORDER BY samples DESC;
+
+
+5. Check currently running queries
+
+SEL*CT
+    s.sid,
+    s*serial#,
+    s.username,
+    s*status,
+    q.sql_id,
+    q.sql_te*t
+FROM v*session s
+JOIN v$sql q
+    ON*s.sql_id =*q.sql_id
+WHERE s*status = 'ACTIVE'
+  AND s.username*IS NOT NULL;
+  
+
+
+6. Generate an activity report between two timestamps  
+  
+  SELECT
+    ash.sql_id,*    COUNT(*) AS active_samples,
+  * MIN**sh.sample_time) first_seen,
+    MA*(ash.sample_time) last_seen
+FROM v*active_session_history ash
+WHERE a*h.sample_time BETWEEN :start_time *ND :end_time
+GROUP BY ash.sql_id
+O*DER BY active_samples DESC;
+  
