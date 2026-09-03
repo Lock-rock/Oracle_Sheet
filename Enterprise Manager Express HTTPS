@@ -1,0 +1,54 @@
+First check https port for EME:
+
+SELECT DBMS_XDB_CONFIG.GETHTTPSPORT() FROM DUAL;
+
+Output:
+GETHTTPSPORT()
+--------------            i e enable in this database.
+5500
+
+
+also check listner status with 5500:
+
+Check Listener status
+
+Output:
+LSNRCTL for IBM/AIX RISC System/6000: Version 19.0.0.0.0 - Production on 03-SEP-2026 17:21:03
+
+Copyright (c) 1991, 2019, Oracle.  All rights reserved.
+
+Connecting to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=docproddb.ITGI.CO.IN)(PORT=1521)))
+STATUS of the LISTENER
+------------------------
+Alias                     LISTENER
+Version                   TNSLSNR for IBM/AIX RISC System/6000: Version 19.0.0.0.0 - Production
+Start Date                15-FEB-2026 06:39:25
+Uptime                    200 days 10 hr. 41 min. 37 sec
+Trace Level               off
+Security                  ON: Local OS Authentication
+SNMP                      OFF
+Listener Parameter File   /orahome/app/oracle/product/19.0.0/dbhome_1/network/admin/listener.ora
+Listener Log File         /orahome/app/oracle/diag/tnslsnr/docproddb/listener/alert/log.xml
+Listening Endpoints Summary...
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=docproddb.ITGI.CO.IN)(PORT=1521)))
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=ipc)(KEY=EXTPROC1521)))
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=docproddb.ITGI.CO.IN)(PORT=5510))(Presentation=HTTP)(Session=RAW))
+  (DESCRIPTION=(ADDRESS=(PROTOCOL=tcps)(HOST=docproddb.ITGI.CO.IN)(PORT=5500))(Security=(my_wallet_directory=/u01/app/oracle/admin/NPEGAPRD/xdb_wallet))(Presentation=HTTP)(Session=RAW))
+Services Summary...
+Service "DOCMORCL" has 1 instance(s).
+  Instance "DOCMORCL", status READY, has 1 handler(s) for this service...
+Service "DOCMORCLXDB" has 1 instance(s).
+  Instance "DOCMORCL", status READY, has 1 handler(s) for this service...
+Service "d32fb88792595bc1e0530101007ffa34" has 1 instance(s).
+  Instance "DOCMORCL", status READY, has 1 handler(s) for this service...
+Service "docmprd" has 1 instance(s).
+  Instance "DOCMORCL", status READY, has 1 handler(s) for this service...
+The command completed successfully
+
+
+Test from browser:
+https://<server-hostname>:5500/em
+
+
+Enable Oracle Enterprise Manager (EM Express) on port 5500:
+EXEC DBMS_XDB_CONFIG.SETHTTPSPORT(5500);
