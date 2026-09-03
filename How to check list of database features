@@ -1,0 +1,6 @@
+col NAME for a35;
+SELECT name, detected_usages, currently_used
+FROM dba_feature_usage_statistics
+WHERE name LIKE '%Diagnostic%'
+OR name LIKE '%Tuning%';
+
