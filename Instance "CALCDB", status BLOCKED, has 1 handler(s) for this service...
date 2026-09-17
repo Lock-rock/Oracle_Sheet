@@ -1,0 +1,17 @@
+check:
+select instance_name,status from v$instance;
+select open_mode from v$database;
+
+SQL>  select instance_name,status from v$instance;
+
+INSTANCE_NAME    STATUS
+---------------- ------------
+CALCDB           STARTED
+
+alter system register;
+
+alter database mount;
+
+alter database open;
+
+now check listner status.
