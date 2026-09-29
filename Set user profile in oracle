@@ -31,3 +31,9 @@ if [ $USER = "oracle" ]; then
     fi
 fi
 #envo
+========================================================================================================================================
+For set Or Run sqlplus:
+
+export ORACLE_HOME=$ORACLE_BASE/product/19/dbhome_1/client
+export LD_LIBRARY_PATH="$ORACLE_HOME"
+export PATH="$ORACLE_HOME:$PATH"
