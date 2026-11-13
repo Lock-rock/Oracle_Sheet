@@ -1,0 +1,51 @@
+Final Steps :
+1. Create interim table 
+2. check if can redef
+BEGIN
+DBMS_REDEFINITION.CAN_REDEF_TABLE('PEGADATA','ITGI_CLM_STG', DBMS_REDEFINITION.CONS_USE_PK);
+END;
+3. Enable parallel session :
+ALTER SESSION FORCE PARALLEL DML PARALLEL 8 ;
+ALTER SESSION FORCE PARALLEL QUERY PARALLEL 8 ;
+
+4. start redef
+BEGIN
+DBMS_REDEFINITION.START_REDEF_TABLE( uname => 'PEGADATA',
+                  orig_table => 'ITGI_CLM_STG',
+                  int_table => 'ITGI_CLM_STG_INTERIM', options_flag => DBMS_REDEFINITION.CONS_USE_PK);
+END;
+/
+
+5. -- COPY THE TABLE DEPENDENTS FROM THE ORIGINAL TABLE TO THE INTERIM TABLE
+
+DECLARE
+   error_count pls_integer := 0;
+BEGIN
+    DBMS_REDEFINITION.COPY_TABLE_DEPENDENTS('PEGADATA','ITGI_CLM_STG', 'ITGI_CLM_STG_INTERIM', dbms_redefinition.cons_orig_params, TRUE,TRUE,TRUE,FALSE, error_count);
+    DBMS_OUTPUT.PUT_LINE('errors := ' || TO_CHAR(error_count));
+END;
+/
+
+6. Perform SYNC
+BEGIN
+   DBMS_REDEFINITION.SYNC_INTERIM_TABLE('PEGADATA', 'ITGI_CLM_STG', 'ITGI_CLM_STG_INTERIM');
+END;
+/
+
+7. Finish redef 
+BEGIN DBMS_REDEFINITION.FINISH_REDEF_TABLE('PEGADATA','ITGI_CLM_STG','ITGI_CLM_STG_INTERIM');
+END;
+/
+
+8. Validation : Check constraint & indexes
+
+Note : 
+Incase of failure , need to abort :
+BEGIN
+  DBMS_REDEFINITION.ABORT_REDEF_TABLE(
+uname => 'PEGADATA',
+                  orig_table => 'PC_DATA_WORKATTACH_LMS_20241005',
+                  int_table => 'PC_DATA_WORKATTACH_LMS_20241005_INTERIM'
+  );
+END;
+/
