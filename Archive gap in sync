@@ -1,0 +1,23 @@
+2026-11-14T19:31:07.384728+05:30
+PR00 (PID:591330): FAL: Failed to request gap sequence
+PR00 (PID:591330):  GAP - thread 1 sequence 126847-126847
+PR00 (PID:591330):  DBID 3310730633 branch 1181600001
+PR00 (PID:591330): FAL: All defined FAL servers have been attempted
+PR00 (PID:591330): -------------------------------------------------------------------------
+PR00 (PID:591330): Check that the CONTROL_FILE_RECORD_KEEP_TIME initialization
+PR00 (PID:591330): parameter is defined to a value that's sufficiently large
+PR00 (PID:591330): enough to maintain adequate log switch information to resolve
+PR00 (PID:591330): archived redo log gaps.
+PR00 (PID:591330): -------------------------------------------------------------------------
+2026-11-14T19:31:46.736423+05:30
+ rfs (PID:21103100): Selected LNO:2 for T-1.S-126970 dbid 3310730633 branch 1181600001
+2026-11-14T19:31:47.195178+05:30
+ARC9 (PID:66191756): Archived Log entry 1537546 added for T-1.S-126969 ID 0xffffffffd2a1930b LAD:1
+
+Find archive in prod and move in HA 
+and then start this.
+
+ALTER DATABASE REGISTER LOGFILE '/temp_arc/arch/1_126847_1181600001.arc';   
+ALTER DATABASE REGISTER LOGFILE '/path/to/missing_archive.log';   
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;   
